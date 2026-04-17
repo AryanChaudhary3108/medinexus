@@ -226,6 +226,11 @@
       border-radius:8px; padding:0.48rem 0.9rem; font-size:0.76rem; font-weight:700;
       font-family:'Space Grotesk',sans-serif; cursor:pointer;
     }
+    .entry-save.edit {
+      border-color: rgba(14,165,233,0.45);
+      background: rgba(14,165,233,0.16);
+      color: var(--primary);
+    }
     .entry-cancel {
       border:1px solid var(--border); background:none; color:var(--muted);
       border-radius:8px; padding:0.48rem 0.9rem; font-size:0.76rem; font-weight:700;
@@ -233,6 +238,168 @@
     }
     .entry-note { margin-top:0.6rem; font-size:0.72rem; color:var(--muted); }
     .entry-error { margin-top:0.6rem; font-size:0.72rem; color:#f87171; }
+    .toast {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      z-index: 60;
+      display: none;
+      min-width: 220px;
+      max-width: 360px;
+      border-radius: 10px;
+      border: 1px solid rgba(16,185,129,0.45);
+      background: rgba(15,23,42,0.95);
+      color: #86efac;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      padding: 0.7rem 0.9rem;
+      box-shadow: 0 14px 36px rgba(2,6,23,0.45);
+      transform: translateY(8px);
+      opacity: 0;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .toast.show {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .lab-reports-section {
+      margin-top: 1rem;
+      padding: 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+    }
+    .lab-reports-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1.3px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+    .lab-upload-area {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.75rem;
+      padding: 0.6rem;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      background: rgba(14,165,233,0.05);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lab-upload-area:hover {
+      border-color: var(--primary);
+      background: rgba(14,165,233,0.1);
+    }
+    .lab-upload-area.uploading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    #lab-file-input {
+      display: none;
+    }
+    .lab-upload-text {
+      font-size: 0.74rem;
+      color: var(--muted);
+      flex: 1;
+    }
+    .lab-upload-btn {
+      padding: 0.35rem 0.7rem;
+      border: 1px solid rgba(14,165,233,0.4);
+      background: rgba(14,165,233,0.12);
+      color: var(--primary);
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      font-family: 'Space Grotesk',sans-serif;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .lab-upload-btn:hover {
+      background: rgba(14,165,233,0.2);
+    }
+    .lab-reports-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .lab-report-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.73rem;
+    }
+    .lab-report-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex: 1;
+      min-width: 0;
+    }
+    .lab-report-icon {
+      font-size: 1.2rem;
+    }
+    .lab-report-details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+      min-width: 0;
+    }
+    .lab-report-name {
+      color: var(--text);
+      font-weight: 700;
+      word-break: break-all;
+    }
+    .lab-report-date {
+      color: var(--muted);
+      font-size: 0.68rem;
+    }
+    .lab-report-actions {
+      display: flex;
+      gap: 0.35rem;
+    }
+    .lab-report-btn {
+      padding: 0.3rem 0.5rem;
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--muted);
+      border-radius: 4px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      font-family: 'Space Grotesk',sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lab-report-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .lab-report-btn.delete:hover {
+      border-color: #f87171;
+      color: #f87171;
+    }
+    .lab-upload-status {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 0.4rem;
+      min-height: 1rem;
+    }
+    .lab-upload-status.error {
+      color: #f87171;
+    }
+    .lab-upload-status.success {
+      color: #34d399;
+    }
     @media (max-width: 760px) {
       .detail-sections { grid-template-columns: 1fr; }
       .summary-grid { grid-template-columns: 1fr; }
@@ -249,9 +416,8 @@
     </div>
     <ul class="nav-links">
       <li><a href="index.html">Home</a></li>
-      <li><a href="dashboard.html">Command Center</a></li>
+      <li><a href="dashboard.html">Bed Management</a></li>
       <li><a href="patients.html" class="active">Patients</a></li>
-      <li><a href="energy.html">Energy</a></li>
       <li><a href="companion.html">CareGuide</a></li>
     </ul>
     <div class="nav-right">
@@ -279,8 +445,8 @@
       </div>
       <div class="ops-strip">
         <div class="ops-left">
-          <span class="status-chip warn" id="connection-chip">Checking backend...</span>
-          <span class="status-chip" id="source-chip">Data: fallback</span>
+          <span class="status-chip warn" id="connection-chip">Connecting to backend...</span>
+          <span class="status-chip" id="source-chip">Data: backend</span>
         </div>
         <div class="ops-right">
           <span class="status-chip" id="demo-chip">Live updates running</span>
@@ -319,8 +485,8 @@
     <div class="entry-sheet" onclick="event.stopPropagation()">
       <div class="entry-head">
         <div>
-          <div class="entry-title">New Patient Entry</div>
-          <div class="entry-sub">Create a patient record in the operational backend database</div>
+          <div class="entry-title" id="entry-title">New Patient Entry</div>
+          <div class="entry-sub" id="entry-sub">Create a patient record in the operational backend database</div>
         </div>
         <button class="entry-close" onclick="closePatientEntryModal()">Close</button>
       </div>
@@ -384,15 +550,18 @@
             <textarea id="pf-notes" placeholder="Bedside notes"></textarea>
           </div>
         </div>
+        <div id="entry-lab-host" class="entry-field full"></div>
         <div class="entry-note">Fields marked with * are required.</div>
         <div class="entry-error" id="entry-error" style="display:none;"></div>
         <div class="entry-actions">
           <button type="button" class="entry-cancel" onclick="closePatientEntryModal()">Cancel</button>
-          <button type="submit" class="entry-save">Save Patient</button>
+          <button type="submit" class="entry-save" id="entry-save-btn">Save Patient</button>
         </div>
       </form>
     </div>
   </div>
+
+  <div class="toast" id="save-toast" role="status" aria-live="polite"></div>
 
   <script src="js/simulation.js"></script>
   <script>
@@ -400,14 +569,29 @@
     const apiBase = window.MEDINEXUS_API_BASE || 'http://localhost:8000';
     let ward = 'all';
     let activeRole = 'nurse';
+    let editingPatientId = null;
+    let toastTimer = null;
+    let entryPendingLabFiles = [];
+    let entryExistingLabReports = [];
+
+    function showSaveToast(message) {
+      const toast = document.getElementById('save-toast');
+      if (!toast) return;
+      toast.textContent = message;
+      toast.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2400);
+    }
 
     function renderConnection(state) {
       const chip = document.getElementById('connection-chip');
       const source = document.getElementById('source-chip');
       if (!chip || !source || !state) return;
       chip.className = `status-chip ${state.backendConnected ? 'ok' : 'warn'}`;
-      chip.textContent = state.backendConnected ? 'Backend connected' : 'Fallback mode active';
-      source.textContent = `Data: ${state.source}`;
+      chip.textContent = state.backendConnected ? 'Backend connected' : 'Connecting to backend...';
+      source.textContent = `Data: ${state.source || 'backend'}`;
     }
 
     function renderDemoMode(isDemo) {
@@ -463,7 +647,10 @@
               <div class="pdc-name">${statusIcons[p.status]} ${p.name}</div>
               <div class="pdc-info">Room ${p.room} · ${p.ward} Ward · Age ${p.age} · Bed ${p.bed}</div>
             </div>
-            <span class="status-badge badge-${p.status}">${p.status.toUpperCase()}</span>
+            <div style="display:flex;align-items:center;gap:0.4rem;">
+              <button class="entry-cancel" style="padding:0.24rem 0.52rem;font-size:0.64rem;" onclick="event.stopPropagation();openPatientEditModal(${p.id})">Edit</button>
+              <span class="status-badge badge-${p.status}">${p.status.toUpperCase()}</span>
+            </div>
           </div>
           <div class="pdc-body">
             <div class="summary-grid">
@@ -512,6 +699,9 @@
       document.getElementById('detail-meta').textContent = `Role view: ${activeRole.toUpperCase()} · Risk ${patient.ews}/10 (${patient.status.toUpperCase()})`;
 
       document.getElementById('detail-body').innerHTML = `
+        <div style="display:flex;justify-content:flex-end;margin-bottom:0.7rem;">
+          <button class="entry-cancel" onclick="openPatientEditModal(${patient.id})">Edit Patient</button>
+        </div>
         <div class="detail-sections">
           <div class="detail-card">
             <h4>Quick Overview</h4>
@@ -543,9 +733,20 @@
             <div class="detail-line"><b>Room:</b>${escHtml(patient.room)} · <b>Age:</b>${escHtml(patient.age)}</div>
           </div>
         </div>
+        <div class="lab-reports-section">
+          <div class="lab-reports-title">📋 Lab Reports</div>
+          <div class="lab-upload-area" id="lab-upload-area-${patient.id}">
+            <span class="lab-upload-text">Upload PDF lab report</span>
+            <button class="lab-upload-btn" onclick="document.getElementById('lab-file-input-${patient.id}').click()">Browse</button>
+            <input type="file" id="lab-file-input-${patient.id}" accept="application/pdf,.pdf" style="display:none;" onchange="handleLabFileSelect(event, ${patient.id})"/>
+          </div>
+          <div class="lab-upload-status" id="lab-status-${patient.id}"></div>
+          <div class="lab-reports-list" id="lab-list-${patient.id}"></div>
+        </div>
       `;
 
       document.getElementById('detail-modal').classList.add('open');
+      loadLabReports(patient.id);
     }
     window.openPatientDetail = openPatientDetail;
 
@@ -557,13 +758,68 @@
 
     function openPatientEntryModal() {
       document.getElementById('entry-error').style.display = 'none';
+      editingPatientId = null;
+      entryPendingLabFiles = [];
+      entryExistingLabReports = [];
+      document.getElementById('entry-title').textContent = 'New Patient Entry';
+      document.getElementById('entry-sub').textContent = 'Create a patient record in the operational backend database';
+      const saveBtn = document.getElementById('entry-save-btn');
+      saveBtn.textContent = 'Save Patient';
+      saveBtn.classList.remove('edit');
+      document.getElementById('entry-form').reset();
+      renderEntryLabSection();
       document.getElementById('entry-modal').classList.add('open');
     }
     window.openPatientEntryModal = openPatientEntryModal;
 
+    async function openPatientEditModal(patientId) {
+      const patient = sim.patients.find(p => p.id === patientId);
+      if (!patient) return;
+
+      editingPatientId = patientId;
+      entryPendingLabFiles = [];
+      entryExistingLabReports = [];
+      document.getElementById('entry-error').style.display = 'none';
+      document.getElementById('entry-title').textContent = 'Edit Patient Record';
+      document.getElementById('entry-sub').textContent = `Update patient details for ${patient.name}`;
+      const saveBtn = document.getElementById('entry-save-btn');
+      saveBtn.textContent = 'Update Patient';
+      saveBtn.classList.add('edit');
+
+      let patientFull = null;
+      try {
+        const res = await fetch(`${apiBase}/api/patients/${patientId}`);
+        if (res.ok) patientFull = await res.json();
+      } catch (_) {
+        patientFull = null;
+      }
+
+      const src = patientFull || patient;
+      document.getElementById('pf-name').value = src.display_name || src.name || '';
+      document.getElementById('pf-age').value = Number(src.age || 0);
+      document.getElementById('pf-sex').value = src.sex || '';
+      document.getElementById('pf-ward').value = src.ward || '';
+      document.getElementById('pf-bed').value = src.bed || '';
+      document.getElementById('pf-room').value = src.room || '';
+      document.getElementById('pf-ews').value = Number(src.ews || 0);
+      document.getElementById('pf-status').value = src.status || 'stable';
+      document.getElementById('pf-code').value = src.patient_code || '';
+      document.getElementById('pf-conditions').value = (src.conditions || []).join(', ');
+      document.getElementById('pf-labs').value = src.pending_labs || src.pendingLabs || '';
+      document.getElementById('pf-notes').value = src.notes || '';
+
+      await loadEntryLabReports(patientId);
+      renderEntryLabSection();
+      document.getElementById('entry-modal').classList.add('open');
+    }
+    window.openPatientEditModal = openPatientEditModal;
+
     function closePatientEntryModal(event) {
       if (event && event.target && event.target.id && event.target.id !== 'entry-modal') return;
       document.getElementById('entry-modal').classList.remove('open');
+      editingPatientId = null;
+      entryPendingLabFiles = [];
+      entryExistingLabReports = [];
     }
     window.closePatientEntryModal = closePatientEntryModal;
 
@@ -579,9 +835,10 @@
       const errorEl = document.getElementById('entry-error');
       errorEl.style.display = 'none';
 
+      const isEdit = editingPatientId !== null;
       const patientCodeInput = document.getElementById('pf-code').value.trim();
       const payload = {
-        patient_code: patientCodeInput || `P-${String(Date.now()).slice(-6)}`,
+        patient_code: patientCodeInput || (isEdit ? '' : `P-${String(Date.now()).slice(-6)}`),
         display_name: document.getElementById('pf-name').value.trim(),
         age: Number(document.getElementById('pf-age').value),
         sex: document.getElementById('pf-sex').value || null,
@@ -598,8 +855,14 @@
       };
 
       try {
-        const res = await fetch(`${apiBase}/api/patients`, {
-          method: 'POST',
+        if (isEdit && !patientCodeInput) delete payload.patient_code;
+        const method = isEdit ? 'PATCH' : 'POST';
+        const url = isEdit
+          ? `${apiBase}/api/patients/${editingPatientId}`
+          : `${apiBase}/api/patients`;
+
+        const res = await fetch(url, {
+          method,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
@@ -609,16 +872,299 @@
           throw new Error(detail || 'Unable to save patient');
         }
 
+        const savedPatient = await res.json();
+        const effectivePatientId = isEdit ? editingPatientId : Number(savedPatient?.id || 0);
+
+        if (effectivePatientId && entryPendingLabFiles.length) {
+          for (const file of entryPendingLabFiles) {
+            const formData = new FormData();
+            formData.append('file', file);
+            const uploadRes = await fetch(`${apiBase}/api/patients/${effectivePatientId}/lab-reports`, {
+              method: 'POST',
+              body: formData,
+            });
+            if (!uploadRes.ok) {
+              const uploadDetail = await uploadRes.text();
+              throw new Error(uploadDetail || `Unable to upload lab report ${file.name}`);
+            }
+          }
+        }
+
+        const queuedUploadCount = entryPendingLabFiles.length;
         document.getElementById('entry-form').reset();
         closePatientEntryModal();
         await sim.loadPatientsFromBackend();
         renderAll();
+        const uploadMsg = queuedUploadCount ? ` + ${queuedUploadCount} report(s) uploaded` : '';
+        showSaveToast((isEdit ? 'Patient updated successfully' : 'Patient saved successfully') + uploadMsg);
       } catch (err) {
         errorEl.textContent = `Save failed: ${String(err.message || err)}`;
         errorEl.style.display = 'block';
       }
     }
     window.submitPatientEntry = submitPatientEntry;
+
+    async function handleLabFileSelect(event, patientId) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      // Validate file type
+      if (file.type !== 'application/pdf') {
+        const statusEl = document.getElementById(`lab-status-${patientId}`);
+        if (statusEl) {
+          statusEl.textContent = '❌ Only PDF files are allowed';
+          statusEl.classList.add('error');
+          statusEl.classList.remove('success');
+        }
+        return;
+      }
+
+      // Show uploading state
+      const uploadArea = document.getElementById(`lab-upload-area-${patientId}`);
+      const statusEl = document.getElementById(`lab-status-${patientId}`);
+      if (uploadArea) uploadArea.classList.add('uploading');
+      if (statusEl) {
+        statusEl.textContent = '⏳ Uploading...';
+        statusEl.classList.remove('error', 'success');
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const res = await fetch(`${apiBase}/api/patients/${patientId}/lab-reports`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const detail = await res.text();
+          throw new Error(detail || 'Upload failed');
+        }
+
+        // Reset file input
+        event.target.value = '';
+
+        if (statusEl) {
+          statusEl.textContent = '✅ Report uploaded successfully';
+          statusEl.classList.add('success');
+          statusEl.classList.remove('error');
+        }
+
+        // Reload lab reports
+        await loadLabReports(patientId);
+        showSaveToast('Lab report uploaded successfully');
+      } catch (err) {
+        if (statusEl) {
+          statusEl.textContent = `❌ ${String(err.message || err)}`;
+          statusEl.classList.add('error');
+          statusEl.classList.remove('success');
+        }
+      } finally {
+        if (uploadArea) uploadArea.classList.remove('uploading');
+      }
+    }
+    window.handleLabFileSelect = handleLabFileSelect;
+
+    async function loadLabReports(patientId) {
+      const listEl = document.getElementById(`lab-list-${patientId}`);
+      if (!listEl) return;
+
+      try {
+        const res = await fetch(`${apiBase}/api/patients/${patientId}/lab-reports`);
+        if (!res.ok) {
+          listEl.innerHTML = '<div style="font-size:0.72rem;color:var(--muted);">Unable to load reports</div>';
+          return;
+        }
+
+        const data = await res.json();
+        const reports = data.lab_reports || [];
+
+        if (reports.length === 0) {
+          listEl.innerHTML = '<div style="font-size:0.72rem;color:var(--muted);">No reports uploaded yet</div>';
+          return;
+        }
+
+        listEl.innerHTML = reports.map((report) => {
+          const uploadedAt = new Date(report.uploaded_at).toLocaleDateString();
+          return `
+            <div class="lab-report-item">
+              <div class="lab-report-info">
+                <div class="lab-report-icon">📄</div>
+                <div class="lab-report-details">
+                  <div class="lab-report-name">${escHtml(report.file_name)}</div>
+                  <div class="lab-report-date">${uploadedAt}</div>
+                </div>
+              </div>
+              <div class="lab-report-actions">
+                <button class="lab-report-btn" onclick="downloadLabReport(${report.id})">Download</button>
+                <button class="lab-report-btn delete" onclick="deleteLabReport(${report.id}, ${patientId})">Delete</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        listEl.innerHTML = '<div style="font-size:0.72rem;color:#f87171;">Error loading reports</div>';
+      }
+    }
+    window.loadLabReports = loadLabReports;
+
+    async function downloadLabReport(reportId) {
+      try {
+        const res = await fetch(`${apiBase}/api/lab-reports/${reportId}/download`);
+        if (!res.ok) throw new Error('Download failed');
+
+        const blob = await res.blob();
+        const disposition = res.headers.get('Content-Disposition') || '';
+        const match = disposition.match(/filename="?([^";]+)"?/i);
+        const fileName = match ? match[1] : `lab-report-${reportId}.pdf`;
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } catch (err) {
+        showSaveToast(`❌ Download failed: ${String(err.message || err)}`);
+      }
+    }
+    window.downloadLabReport = downloadLabReport;
+
+    async function deleteLabReport(reportId, patientId) {
+      if (!confirm('Are you sure you want to delete this report?')) return;
+
+      try {
+        const res = await fetch(`${apiBase}/api/lab-reports/${reportId}`, {
+          method: 'DELETE',
+        });
+
+        if (!res.ok) throw new Error('Delete failed');
+
+        await loadLabReports(patientId);
+        showSaveToast('Report deleted successfully');
+      } catch (err) {
+        showSaveToast(`❌ Delete failed: ${String(err.message || err)}`);
+      }
+    }
+    window.deleteLabReport = deleteLabReport;
+
+    function queueEntryLabFiles(event) {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+
+      const badFile = files.find(f => f.type !== 'application/pdf' && !String(f.name || '').toLowerCase().endsWith('.pdf'));
+      if (badFile) {
+        const errorEl = document.getElementById('entry-error');
+        if (errorEl) {
+          errorEl.textContent = 'Only PDF files are allowed for lab reports.';
+          errorEl.style.display = 'block';
+        }
+        event.target.value = '';
+        return;
+      }
+
+      entryPendingLabFiles = entryPendingLabFiles.concat(files);
+      event.target.value = '';
+      renderEntryLabSection();
+    }
+    window.queueEntryLabFiles = queueEntryLabFiles;
+
+    function removeEntryQueuedLab(index) {
+      entryPendingLabFiles = entryPendingLabFiles.filter((_, i) => i !== index);
+      renderEntryLabSection();
+    }
+    window.removeEntryQueuedLab = removeEntryQueuedLab;
+
+    async function loadEntryLabReports(patientId) {
+      try {
+        const res = await fetch(`${apiBase}/api/patients/${patientId}/lab-reports`);
+        if (!res.ok) {
+          entryExistingLabReports = [];
+          return;
+        }
+        const data = await res.json();
+        entryExistingLabReports = Array.isArray(data.lab_reports) ? data.lab_reports : [];
+      } catch (_) {
+        entryExistingLabReports = [];
+      }
+    }
+
+    async function deleteEntryExistingLab(reportId) {
+      if (!editingPatientId) return;
+      if (!confirm('Are you sure you want to delete this report?')) return;
+      try {
+        const res = await fetch(`${apiBase}/api/lab-reports/${reportId}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Delete failed');
+        await loadEntryLabReports(editingPatientId);
+        renderEntryLabSection();
+        showSaveToast('Report deleted successfully');
+      } catch (err) {
+        showSaveToast(`❌ Delete failed: ${String(err.message || err)}`);
+      }
+    }
+    window.deleteEntryExistingLab = deleteEntryExistingLab;
+
+    function renderEntryLabSection() {
+      const host = document.getElementById('entry-lab-host');
+      if (!host) return;
+
+      const pendingItems = entryPendingLabFiles.length
+        ? entryPendingLabFiles.map((file, idx) => `
+            <div class="lab-report-item">
+              <div class="lab-report-info">
+                <div class="lab-report-icon">📄</div>
+                <div class="lab-report-details">
+                  <div class="lab-report-name">${escHtml(file.name)}</div>
+                  <div class="lab-report-date">Pending upload</div>
+                </div>
+              </div>
+              <div class="lab-report-actions">
+                <button class="lab-report-btn delete" type="button" onclick="removeEntryQueuedLab(${idx})">Remove</button>
+              </div>
+            </div>
+          `).join('')
+        : '<div style="font-size:0.72rem;color:var(--muted);">No files selected</div>';
+
+      const existingItems = editingPatientId
+        ? (entryExistingLabReports.length
+          ? entryExistingLabReports.map((report) => {
+              const uploadedAt = new Date(report.uploaded_at).toLocaleDateString();
+              return `
+                <div class="lab-report-item">
+                  <div class="lab-report-info">
+                    <div class="lab-report-icon">📄</div>
+                    <div class="lab-report-details">
+                      <div class="lab-report-name">${escHtml(report.file_name)}</div>
+                      <div class="lab-report-date">${uploadedAt}</div>
+                    </div>
+                  </div>
+                  <div class="lab-report-actions">
+                    <button class="lab-report-btn" type="button" onclick="downloadLabReport(${report.id})">Download</button>
+                    <button class="lab-report-btn delete" type="button" onclick="deleteEntryExistingLab(${report.id})">Delete</button>
+                  </div>
+                </div>
+              `;
+            }).join('')
+          : '<div style="font-size:0.72rem;color:var(--muted);">No uploaded reports yet</div>')
+        : '<div style="font-size:0.72rem;color:var(--muted);">Save patient first to manage uploaded reports</div>';
+
+      host.innerHTML = `
+        <div class="lab-reports-section">
+          <div class="lab-reports-title">📋 Lab Reports (PDF)</div>
+          <div class="lab-upload-area" onclick="document.getElementById('entry-lab-file-input').click()">
+            <span class="lab-upload-text">Choose one or more PDF files to upload on save</span>
+            <button class="lab-upload-btn" type="button" onclick="event.stopPropagation();document.getElementById('entry-lab-file-input').click()">Browse</button>
+            <input type="file" id="entry-lab-file-input" accept="application/pdf,.pdf" multiple style="display:none;" onchange="queueEntryLabFiles(event)"/>
+          </div>
+          <div class="lab-upload-status">Queued files (${entryPendingLabFiles.length})</div>
+          <div class="lab-reports-list">${pendingItems}</div>
+          <div class="lab-upload-status" style="margin-top:0.7rem;">Existing reports</div>
+          <div class="lab-reports-list">${existingItems}</div>
+        </div>
+      `;
+    }
 
     sim.on('vitals', () => renderAll());
     sim.on('connection', (state) => renderConnection(state));

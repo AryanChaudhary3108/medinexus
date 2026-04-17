@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MediNexus | Intelligent Hospital Ecosystem</title>
-  <meta name="description" content="AI-powered multi-agent hospital management system for intelligent healthcare ecosystems."/>
+  <meta name="description" content="AI-powered hospital management system for intelligent healthcare ecosystems."/>
   <link rel="stylesheet" href="css/style.css"/>
   <style>
     .hero { padding-top: var(--nav-h); }
@@ -99,9 +99,8 @@
     </div>
     <ul class="nav-links">
       <li><a href="index.html" class="active">Home</a></li>
-      <li><a href="dashboard.html">Command Center</a></li>
+      <li><a href="dashboard.html">Bed Management</a></li>
       <li><a href="patients.html">Patients</a></li>
-      <li><a href="energy.html">Energy</a></li>
       <li><a href="companion.html">CareGuide</a></li>
     </ul>
     <div class="nav-right">
@@ -117,14 +116,14 @@
       <p class="hero-eyebrow">INTELLIGENT HEALTHCARE ECOSYSTEM</p>
       <h1 class="hero-title">
         <span class="grad">MediNexus</span><br/>
-        <span style="font-size:0.45em;color:rgba(255,255,255,0.6);letter-spacing:2px;">5 AI AGENTS. ONE HOSPITAL. ZERO BLIND SPOTS.</span>
+        <span style="font-size:0.45em;color:rgba(255,255,255,0.6);letter-spacing:2px;">INTELLIGENT HOSPITAL OPERATIONS. ZERO BLIND SPOTS.</span>
       </h1>
       <p class="hero-sub">
-        A real-time multi-agent AI system that coordinates patient safety, bed management, energy optimization, and patient care — with full human oversight and control.
+        A real-time AI system that coordinates patient safety, bed management, and clinical coordination with full human oversight and control.
       </p>
       <div class="hero-cta">
-        <a href="dashboard.html" class="btn-hero-primary">Open Command Center →</a>
-        <a href="patients.html" class="btn-hero-outline">View Patients</a>
+        <a href="dashboard.html" class="btn-hero-primary">Open Bed Management →</a>
+        <a href="patients.html" class="btn-hero-primary">View Patients</a>
       </div>
 
       <!-- Live preview widget -->
@@ -133,43 +132,12 @@
           <div class="win-dot" style="background:#ef4444;"></div>
           <div class="win-dot" style="background:#f59e0b;margin-left:4px;"></div>
           <div class="win-dot" style="background:#10b981;margin-left:4px;"></div>
-          <span style="margin-left:1rem;font-size:0.75rem;color:var(--muted);font-family:var(--mono);">medinexus — hospital command center</span>
+          <span style="margin-left:1rem;font-size:0.75rem;color:var(--muted);font-family:var(--mono);">medinexus</span>
           <span style="margin-left:auto;display:flex;align-items:center;gap:0.4rem;font-size:0.72rem;color:var(--green);">
             <span class="live-dot"></span>LIVE
           </span>
         </div>
-        <div class="agents-section">
-          <div style="font-size:0.7rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;">
-            ACTIVE AI AGENTS
-          </div>
-          <div class="agent-cards-mini">
-            <div class="agent-card-mini">
-              <img src="img/agent_sentinel.png" class="agent-emoji" style="width:40px;height:40px;object-fit:contain;border-radius:8px;"/>
-              <div class="agent-mini-name">SentinelAgent</div>
-              <div class="agent-mini-status">● MONITORING</div>
-            </div>
-            <div class="agent-card-mini">
-              <img src="img/agent_flow.png" class="agent-emoji" style="width:40px;height:40px;object-fit:contain;border-radius:8px;"/>
-              <div class="agent-mini-name">FlowAgent</div>
-              <div class="agent-mini-status">● OPTIMIZING</div>
-            </div>
-            <div class="agent-card-mini">
-              <img src="img/agent_green.png" class="agent-emoji" style="width:40px;height:40px;object-fit:contain;border-radius:8px;"/>
-              <div class="agent-mini-name">GreenAgent</div>
-              <div class="agent-mini-status">● SAVING 22%</div>
-            </div>
-            <div class="agent-card-mini">
-              <img src="img/agent_careguide.png" class="agent-emoji" style="width:40px;height:40px;object-fit:contain;border-radius:8px;"/>
-              <div class="agent-mini-name">CareGuide</div>
-              <div class="agent-mini-status">● ASSISTING</div>
-            </div>
-            <div class="agent-card-mini" style="border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.05);">
-              <img src="img/agent_command.png" class="agent-emoji" style="width:40px;height:40px;object-fit:contain;border-radius:8px;"/>
-              <div class="agent-mini-name">CommandAgent</div>
-              <div class="agent-mini-status" style="color:var(--amber);">● COORDINATING</div>
-            </div>
-          </div>
-          <div class="hero-preview-inner" style="margin-top:1.5rem;">
+        <div class="hero-preview-inner">
             <div class="mini-stat">
               <span class="mini-stat-icon" style="background:var(--primary-g);"><img src="img/agent_flow.png" alt="beds"/></span>
               <div>
@@ -185,10 +153,10 @@
               </div>
             </div>
             <div class="mini-stat">
-              <span class="mini-stat-icon" style="background:var(--green-g);"><img src="img/agent_green.png" alt="energy"/></span>
+              <span class="mini-stat-icon" style="background:rgba(6,182,212,0.2);"><img src="img/logo.png" alt="sync"/></span>
               <div>
-                <div class="mini-stat-val" style="color:var(--green);">22%</div>
-                <div class="mini-stat-lbl">Energy Saved</div>
+                <div class="mini-stat-val" style="color:#22d3ee;">5s</div>
+                <div class="mini-stat-lbl">Backend Sync Cycle</div>
               </div>
             </div>
             <div class="mini-stat">
@@ -200,7 +168,6 @@
                 <div class="mini-stat-lbl">Critical Alerts</div>
               </div>
             </div>
-          </div>
         </div>
       </div>
     </section>
@@ -217,19 +184,19 @@
             <div class="step-num">1</div>
             <img class="step-icon" src="img/agent_sentinel.png" alt="data"/>
             <div class="step-title">Real-Time Data Ingestion</div>
-            <div class="step-desc">Vitals monitors, bed sensors, energy meters, and patient systems feed live data every 2 seconds into the MediNexus pipeline.</div>
+            <div class="step-desc">Vitals streams, bed state updates, and patient systems feed live data into the MediNexus pipeline every few seconds.</div>
           </div>
           <div class="step-card fade-in">
             <div class="step-num">2</div>
             <img class="step-icon" src="img/agent_command.png" alt="AI"/>
-            <div class="step-title">Multi-Agent AI Analysis</div>
-            <div class="step-desc">5 specialized AI agents analyze data in parallel — patient safety, bed flow, energy, patient care, and orchestration.</div>
+            <div class="step-title">Parallel AI Analysis</div>
+            <div class="step-desc">Specialized AI models analyze data in parallel for patient safety, bed flow, care guidance, and orchestration.</div>
           </div>
           <div class="step-card fade-in">
             <div class="step-num">3</div>
             <img class="step-icon" src="img/agent_flow.png" alt="alerts"/>
             <div class="step-title">Intelligent Alerting</div>
-            <div class="step-desc">Agents generate prioritized, contextual alerts routed to the right staff — before conditions become emergencies.</div>
+            <div class="step-desc">The system generates prioritized, contextual alerts routed to the right staff before conditions become emergencies.</div>
           </div>
           <div class="step-card fade-in">
             <div class="step-num">4</div>
@@ -246,38 +213,38 @@
       <div class="features-inner">
         <div class="section-header fade-in">
           <p class="section-eyebrow">CAPABILITIES</p>
-          <h2 class="section-title">5 Agents, Infinite Intelligence</h2>
+          <h2 class="section-title">Unified Intelligence Platform</h2>
         </div>
         <div class="features-grid">
           <div class="feature-card fade-in">
             <div class="feature-icon" style="background:var(--red-g);padding:0;overflow:hidden;"><img src="img/agent_sentinel.png" style="width:100%;height:100%;object-fit:cover;"/></div>
-            <div class="feature-title">SentinelAgent — Patient Safety</div>
+            <div class="feature-title">Patient Safety Monitoring</div>
             <div class="feature-desc">Monitors all patient vitals in real-time, calculates Early Warning Scores (EWS), detects sepsis risk, fall risk, and medication conflicts 2-4 hours before they become critical.</div>
           </div>
           <div class="feature-card fade-in">
             <div class="feature-icon" style="background:var(--primary-g);padding:0;overflow:hidden;"><img src="img/agent_flow.png" style="width:100%;height:100%;object-fit:cover;"/></div>
-            <div class="feature-title">FlowAgent — Bed &amp; Resource Management</div>
+            <div class="feature-title">Bed &amp; Resource Management</div>
             <div class="feature-desc">Tracks real-time bed occupancy, predicts discharges using ML models, optimizes staff allocation, and prevents bottlenecks before they occur.</div>
           </div>
           <div class="feature-card fade-in">
-            <div class="feature-icon" style="background:var(--green-g);padding:0;overflow:hidden;"><img src="img/agent_green.png" style="width:100%;height:100%;object-fit:cover;"/></div>
-            <div class="feature-title">GreenAgent — Energy Optimizer</div>
-            <div class="feature-desc">Intelligently manages HVAC, lighting, and non-critical equipment. Delivers 15-25% energy savings per shift without impacting patient care quality.</div>
+            <div class="feature-icon" style="background:rgba(6,182,212,0.2);padding:0;overflow:hidden;"><img src="img/logo.png" style="width:100%;height:100%;object-fit:cover;"/></div>
+            <div class="feature-title">Clinical Context Engine</div>
+            <div class="feature-desc">Brings patient notes, pending labs, and operational context together so teams can make fast, well-grounded decisions from one shared view.</div>
           </div>
           <div class="feature-card fade-in">
             <div class="feature-icon" style="background:var(--purple-g);padding:0;overflow:hidden;"><img src="img/agent_careguide.png" style="width:100%;height:100%;object-fit:cover;"/></div>
-            <div class="feature-title">CareGuide — Patient Companion</div>
+            <div class="feature-title">Patient Companion</div>
             <div class="feature-desc">AI conversational assistant for patients in Hindi, Tamil, and English. Handles wayfinding, medication questions, appointment reminders, and anxiety support.</div>
           </div>
           <div class="feature-card fade-in">
             <div class="feature-icon" style="background:var(--amber-g);padding:0;overflow:hidden;"><img src="img/agent_command.png" style="width:100%;height:100%;object-fit:cover;"/></div>
-            <div class="feature-title">CommandAgent — Orchestrator</div>
-            <div class="feature-desc">Coordinates all agents, prioritizes alerts, routes to correct staff, maintains audit logs, and ensures nothing falls through the cracks.</div>
+            <div class="feature-title">Operations Orchestrator</div>
+            <div class="feature-desc">Coordinates all intelligence modules, prioritizes alerts, routes to correct staff, maintains audit logs, and ensures nothing falls through the cracks.</div>
           </div>
           <div class="feature-card fade-in">
             <div class="feature-icon" style="background:rgba(6,182,212,0.2);padding:0;overflow:hidden;"><img src="img/logo.png" style="width:100%;height:100%;object-fit:cover;"/></div>
             <div class="feature-title">Human Oversight &amp; Trust</div>
-            <div class="feature-desc">Every critical action requires clinician approval. Full audit trail. Configurable alert thresholds. AI assists — never replaces — human judgment.</div>
+            <div class="feature-desc">Every critical action requires clinician approval with complete audit history and role-based accountability. AI assists, humans decide.</div>
           </div>
         </div>
       </div>
@@ -296,8 +263,8 @@
             <div class="impact-label">Earlier Deterioration Detection</div>
           </div>
           <div class="impact-num-card fade-in">
-            <div class="impact-num">22%</div>
-            <div class="impact-label">Energy Cost Reduction</div>
+            <div class="impact-num">100%</div>
+            <div class="impact-label">Backend Data Persistence</div>
           </div>
           <div class="impact-num-card fade-in">
             <div class="impact-num">35%</div>
@@ -310,7 +277,7 @@
         </div>
         <div style="margin-top:3rem;">
           <a href="dashboard.html" class="btn-hero-primary">
-            Launch Command Center →
+            Launch Bed Management →
           </a>
         </div>
       </div>

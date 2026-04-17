@@ -2,35 +2,6 @@
 // Real-time hospital observation data + AI agent coordination
 
 const API_BASE = window.MEDINEXUS_API_BASE || 'http://localhost:8000';
-
-function buildFallbackPatients() {
-  return Array.from({ length: 12 }, (_, idx) => {
-    const id = idx + 1;
-    const ews = [1, 2, 5, 5, 8, 1, 9, 4, 0, 4, 4, 1][idx];
-    const status = ews >= 7 ? 'critical' : ews >= 4 ? 'warning' : 'stable';
-    return {
-      id,
-      name: `Patient ${1000 + id}`,
-      age: 25 + (idx * 4),
-      room: `${100 + id}-A`,
-      ward: idx % 5 === 0 ? 'ICU' : idx % 3 === 0 ? 'Cardiac' : 'General',
-      bed: idx % 5 === 0 ? `ICU-${Math.max(1, Math.floor(id / 5))}` : `G-${String(id).padStart(2, '0')}`,
-      conditions: ['Active inpatient case'],
-      notes: 'Clinical observation-based monitoring active.',
-      pendingLabs: idx % 3 === 0 ? 'Follow-up lab panel pending review' : 'No urgent labs pending',
-      vitals: {
-        hr: 68 + idx * 3,
-        sbp: 112 + idx * 3,
-        dbp: 72 + idx,
-        spo2: Math.max(90, 99 - (idx % 6)),
-        temp: +(36.7 + (idx % 4) * 0.3).toFixed(1),
-        rr: 14 + (idx % 8),
-      },
-      trending: status,
-    };
-  });
-}
-
 const AGENT_DEFS = [
   { id:"sentinel", name:"SentinelAgent", img:"img/agent_sentinel.png", cls:"avatar-sentinel", nameCls:"name-sentinel" },
   { id:"flow",     name:"FlowAgent",     img:"img/agent_flow.png",     cls:"avatar-flow",     nameCls:"name-flow" },
@@ -45,42 +16,37 @@ class MediNexus {
     this.demoMode = persistedDemoMode === '1';
     this.connection = {
       backendConnected: false,
-      usingFallback: true,
+      usingFallback: false,
       lastCheckedAt: null,
-      source: 'fallback',
-      message: 'Fallback operational data active',
+      source: 'backend',
+      message: 'Connecting to backend...',
     };
     this.isRunning = false;
 
-    this.patients = buildFallbackPatients().map(p => ({
-      ...p,
-      vitals: { ...p.vitals },
-      history: { hr: Array(20).fill(p.vitals.hr), spo2: Array(20).fill(p.vitals.spo2) },
-      status: p.trending === "critical" ? "critical" : p.trending === "warning" ? "warning" : "stable",
-      ews: this.calcEWS(p.vitals),
-      alertSent: false,
-    }));
+    this.patients = [];
     this.agentLog = [];
     this.alerts = [];
     this.approvedActions = [];
     this.stats = {
-      totalPatients: 127,
-      criticalAlerts: 3,
-      bedOccupancy: 87,
-      energySaved: 22,
+      totalPatients: 0,
+      criticalAlerts: 0,
+      bedOccupancy: 0,
+      energySaved: 0,
       activeAgents: 5,
-      alertsResolved: 14,
+      alertsResolved: 0,
     };
     this.energyData = {
-      hvac: 68, lighting: 42, equipment: 55,
-      totalKw: 284, savedKw: 63, savedCost: 12400,
+      hvac: 0,
+      lighting: 0,
+      equipment: 0,
+      totalKw: 0,
+      savedKw: 0,
+      savedCost: 0,
+      history: [],
     };
-    this.beds = this.generateBeds();
+    this.beds = [];
     this.callbacks = {};
     this.tick = 0;
-    // Pre-populate with initial alerts
-    this.initAlerts();
-    this.initAgentLog();
     this.loadPatientsFromBackend();
     // Emit initial state quickly so pages can paint status chips.
     setTimeout(() => {
@@ -120,7 +86,41 @@ class MediNexus {
       status,
       ews,
       alertSent: false,
+      source: 'backend',
     };
+  }
+
+  toSimBed(record) {
+    return {
+      id: Number(record.id),
+      code: record.bed_code || `BED-${record.id}`,
+      ward: record.ward || 'General',
+      room: record.room || '',
+      status: record.status || 'available',
+      patientId: record.patient_id || null,
+      patientCode: record.patient_code || '',
+      patientName: record.patient_name || '',
+    };
+  }
+
+  async loadBedsFromBackend() {
+    try {
+      const res = await fetch(`${API_BASE}/api/beds`);
+      if (!res.ok) {
+        if (!this.beds.length) {
+          this.beds = this.generateBedsFromPatients(80, this.patients.length);
+        }
+        return;
+      }
+      const payload = await res.json();
+      this.beds = Array.isArray(payload?.beds)
+        ? payload.beds.map(b => this.toSimBed(b))
+        : [];
+    } catch (_) {
+      if (!this.beds.length) {
+        this.beds = this.generateBedsFromPatients(80, this.patients.length);
+      }
+    }
   }
 
   async loadPatientsFromBackend() {
@@ -128,29 +128,12 @@ class MediNexus {
     try {
       const res = await fetch(`${API_BASE}/api/patients`);
       if (!res.ok) {
-        this.connection = {
-          backendConnected: false,
-          usingFallback: true,
-          lastCheckedAt: new Date().toISOString(),
-          source: 'fallback',
-          message: 'Backend unavailable, using fallback operational data',
-        };
-        this.emit('connection', this.connection);
-        return;
+        throw new Error('Backend unavailable');
       }
       const payload = await res.json();
-      if (!payload?.patients || !Array.isArray(payload.patients) || !payload.patients.length) {
-        this.connection = {
-          backendConnected: false,
-          usingFallback: true,
-          lastCheckedAt: new Date().toISOString(),
-          source: 'fallback',
-          message: 'No patient records returned, using fallback operational data',
-        };
-        this.emit('connection', this.connection);
-        return;
-      }
       this.patients = payload.patients.map(p => this.toSimPatient(p));
+      await this.loadBedsFromBackend();
+      this.rebuildDerivedState();
       this.connection = {
         backendConnected: true,
         usingFallback: false,
@@ -161,17 +144,195 @@ class MediNexus {
       this.emit('vitals', this.patients);
       this.emit('connection', this.connection);
     } catch (err) {
-      // Keep fallback operational placeholders when backend is unavailable.
-      console.warn('MediNexus: patient API unavailable, using fallback operational placeholders.', err);
+      console.warn('MediNexus: patient API unavailable.', err);
       this.connection = {
         backendConnected: false,
-        usingFallback: true,
+        usingFallback: false,
         lastCheckedAt: new Date().toISOString(),
-        source: 'fallback',
-        message: 'Backend unavailable, using fallback operational data',
+        source: 'backend',
+        message: 'Backend unavailable',
       };
+      this.patients = [];
+      this.beds = [];
+      this.rebuildDerivedState();
+      this.emit('vitals', this.patients);
       this.emit('connection', this.connection);
     }
+  }
+
+  rebuildDerivedState() {
+    const totalPatients = this.patients.length;
+    const criticalPatients = this.patients.filter(p => p.status === 'critical' || p.ews >= 7);
+    const warningPatients = this.patients.filter(p => p.status === 'warning' || (p.ews >= 4 && p.ews < 7));
+    if (!this.beds.length) {
+      this.beds = this.generateBedsFromPatients(80, criticalPatients.length);
+    }
+    const unavailableBeds = this.beds.filter(b => b.status !== 'available').length;
+    const criticalBeds = this.beds.filter(b => b.status === 'critical').length;
+
+    this.stats.totalPatients = totalPatients;
+    this.stats.criticalAlerts = criticalBeds || criticalPatients.length;
+    this.stats.bedOccupancy = this.beds.length ? Math.round((unavailableBeds / this.beds.length) * 100) : 0;
+
+    this.energyData = this.buildEnergyData(totalPatients, criticalPatients.length, warningPatients.length);
+    this.stats.energySaved = this.energyData.totalKw > 0
+      ? Math.round((this.energyData.savedKw / this.energyData.totalKw) * 100)
+      : 0;
+
+    this.alerts = this.buildBedActionAlerts(criticalPatients, warningPatients);
+    this.agentLog = this.buildAgentLogFromPatients(totalPatients, criticalPatients.length, warningPatients.length);
+
+    this.emit('stats', this.stats);
+    this.emit('beds', this.beds);
+    this.emit('alerts', this.alerts);
+    this.emit('agentLog', this.agentLog);
+    this.emit('energy', this.energyData);
+  }
+
+  generateBedsFromPatients(capacity = 60, criticalCount = 0) {
+    const occupiedCount = Math.min(capacity, this.patients.length);
+    const critical = Math.min(occupiedCount, criticalCount);
+    const icuCount = Math.min(
+      occupiedCount - critical,
+      this.patients.filter(p => p.ward === 'ICU' && p.status !== 'critical').length,
+    );
+    const reserved = Math.max(0, Math.min(capacity - occupiedCount, Math.round(capacity * 0.08)));
+    const normalOccupied = Math.max(0, occupiedCount - critical - icuCount);
+    const available = Math.max(0, capacity - critical - icuCount - normalOccupied - reserved);
+
+    const statuses = [
+      ...Array(critical).fill('critical'),
+      ...Array(icuCount).fill('icu'),
+      ...Array(normalOccupied).fill('occupied'),
+      ...Array(reserved).fill('reserved'),
+      ...Array(available).fill('available'),
+    ];
+
+    return statuses.map((status, idx) => ({
+      id: idx + 1,
+      code: `BED-${String(idx + 1).padStart(3, '0')}`,
+      ward: 'General',
+      room: '',
+      status,
+      patientId: null,
+      patientCode: '',
+      patientName: '',
+    }));
+  }
+
+  buildBedActionAlerts(criticalPatients, warningPatients) {
+    const queue = [];
+    const now = this.timeStr(0);
+
+    this.beds
+      .filter(b => b.status === 'reserved')
+      .slice(0, 4)
+      .forEach((b) => {
+        queue.push({
+          id: `bed_reserved_${b.id}`,
+          severity: 'warning',
+          room: b.room || b.ward,
+          title: `🟨 Reserved Bed ${b.code}`,
+          desc: `Bed is reserved and waiting for assignment. Release if no admission is expected.`,
+          agent: '🛏️ FlowAgent',
+          time: now,
+          actions: [
+            { label: 'RELEASE', cls: 'btn-approve', fn: 'releaseBed', arg: String(b.id) },
+            { label: 'DISMISS', cls: 'btn-dismiss', fn: 'dismissAlert', arg: `bed_reserved_${b.id}` },
+          ],
+        });
+      });
+
+    this.beds
+      .filter(b => b.status === 'available')
+      .slice(0, 3)
+      .forEach((b) => {
+        queue.push({
+          id: `bed_available_${b.id}`,
+          severity: 'warning',
+          room: b.room || b.ward,
+          title: `🟩 Vacant Bed ${b.code}`,
+          desc: `Vacant bed ready for incoming admissions. Mark as reserved when assigning queue patients.`,
+          agent: '🛏️ FlowAgent',
+          time: now,
+          actions: [
+            { label: 'RESERVE', cls: 'btn-approve', fn: 'reserveBed', arg: String(b.id) },
+            { label: 'DISMISS', cls: 'btn-dismiss', fn: 'dismissAlert', arg: `bed_available_${b.id}` },
+          ],
+        });
+      });
+
+    criticalPatients.slice(0, 3).forEach((p) => {
+      queue.push({
+        id: `patient_transfer_${p.id}`,
+        severity: 'critical',
+        room: `Room ${p.room}`,
+        title: `🚨 Transfer Priority — ${p.name}`,
+        desc: `Critical occupancy at ${p.ward} ${p.bed}. Approve transfer workflow when ICU coordination is needed.`,
+        agent: '🛡️ SentinelAgent',
+        time: now,
+        actions: [
+          { label: 'APPROVE TRANSFER', cls: 'btn-approve', fn: 'approveTransfer', arg: String(p.id) },
+          { label: 'ESCALATE', cls: 'btn-escalate', fn: 'escalateAlert', arg: `patient_transfer_${p.id}` },
+          { label: 'DISMISS', cls: 'btn-dismiss', fn: 'dismissAlert', arg: `patient_transfer_${p.id}` },
+        ],
+      });
+    });
+
+    if (!queue.length && warningPatients.length) {
+      const p = warningPatients[0];
+      queue.push({
+        id: `patient_watch_${p.id}`,
+        severity: 'warning',
+        room: `Room ${p.room}`,
+        title: `⚠️ Capacity Watch — ${p.name}`,
+        desc: `Monitor this occupied bed for possible escalation and downstream bed turnover planning.`,
+        agent: '🛏️ FlowAgent',
+        time: now,
+        actions: [
+          { label: 'DISMISS', cls: 'btn-dismiss', fn: 'dismissAlert', arg: `patient_watch_${p.id}` },
+        ],
+      });
+    }
+
+    return queue.slice(0, 8);
+  }
+
+  buildEnergyData(totalPatients, criticalCount, warningCount) {
+    const totalKw = Math.max(120, Math.round(150 + totalPatients * 3 + criticalCount * 8 + warningCount * 3));
+    const savedKw = Math.max(8, Math.round(totalKw * 0.18));
+    const savedCost = savedKw * 195;
+    const hvac = Math.round(totalKw * 0.48);
+    const lighting = Math.round(totalKw * 0.24);
+    const equipment = Math.max(0, totalKw - hvac - lighting);
+    const history = Array.from({ length: 9 }, (_, i) => {
+      const drift = (8 - i) * 4;
+      return Math.max(100, totalKw + drift - Math.round(savedKw * 0.2));
+    });
+
+    return {
+      hvac,
+      lighting,
+      equipment,
+      totalKw,
+      savedKw,
+      savedCost,
+      history,
+    };
+  }
+
+  buildAgentLogFromPatients(totalPatients, criticalCount, warningCount) {
+    const availableBeds = this.beds.filter(b => b.status === 'available').length;
+    const occupiedBeds = this.beds.filter(b => b.status !== 'available').length;
+    const reservedBeds = this.beds.filter(b => b.status === 'reserved').length;
+    return [
+      { agent: 'command', text: `Backend census synced: ${totalPatients} active patients across monitored wards.`, time: this.timeStr(-6) },
+      { agent: 'sentinel', text: `Acuity scan: ${criticalCount} critical, ${warningCount} warning, ${Math.max(0, totalPatients - criticalCount - warningCount)} stable.`, time: this.timeStr(-5) },
+      { agent: 'flow', text: `Bed map synced from backend inventory. ${occupiedBeds} occupied, ${reservedBeds} reserved, ${availableBeds} available.`, time: this.timeStr(-4) },
+      { agent: 'green', text: `Energy model recomputed from occupancy profile. Estimated load ${this.energyData.totalKw} kW.`, time: this.timeStr(-3) },
+      { agent: 'guide', text: `CareGuide context refreshed using latest patient notes and pending labs.`, time: this.timeStr(-2) },
+      { agent: 'command', text: `Priority queue refreshed with ${this.alerts.length} active risk alerts.`, time: this.timeStr(-1) },
+    ];
   }
 
   setDemoMode(enabled) {
@@ -218,104 +379,6 @@ class MediNexus {
     return Math.min(s, 10);
   }
 
-  generateBeds() {
-    const beds = [];
-    const statuses = ['available','occupied','occupied','occupied','occupied','reserved','critical','icu'];
-    for (let i = 0; i < 60; i++) {
-      const roll = Math.random();
-      let st = roll < 0.13 ? 'available' : roll < 0.8 ? 'occupied' : roll < 0.9 ? 'reserved' : roll < 0.96 ? 'critical' : 'icu';
-      beds.push({ id: i+1, status: st });
-    }
-    return beds;
-  }
-
-  initAlerts() {
-    this.alerts = [
-      {
-        id: 'a1', severity: 'critical', room: 'Room 301-A',
-        title: '⚠️ Sepsis Risk Detected — ICU Patient',
-        desc: 'EWS score remains high with worsening respiratory and infection-related symptoms. Sepsis protocol recommended.',
-        agent: '🛡️ SentinelAgent', time: this.timeStr(-3),
-        explain: {
-          trigger: 'High EWS with respiratory and temperature derangement',
-          drivers: ['EWS 8/10', 'Respiratory distress signs', 'Infection symptom escalation', 'Acuity progression'],
-          confidence: 'High (0.91)',
-          ifIgnored: 'Risk of rapid sepsis progression and ICU transfer delay',
-        },
-        actions: [
-          { label:'APPROVE TRANSFER', cls:'btn-approve', fn:'approveTransfer', arg:'5' },
-          { label:'ESCALATE', cls:'btn-escalate', fn:'escalateAlert', arg:'a1' },
-          { label:'DISMISS', cls:'btn-dismiss', fn:'dismissAlert', arg:'a1' },
-        ]
-      },
-      {
-        id: 'a2', severity: 'critical', room: 'Room 202-B',
-        title: '🫀 Acute MI Alert — Cardiac Patient',
-        desc: 'Cardiac symptom burden has escalated with high-risk trajectory. Cardiologist notification sent. ICU bed pre-reserved.',
-        agent: '🧠 CommandAgent', time: this.timeStr(-7),
-        explain: {
-          trigger: 'Cardiac deterioration with oxygen desaturation and hypertensive response',
-          drivers: ['Cardiac symptom progression', 'High acuity risk profile', 'Known cardiac history', 'Escalation protocol trigger'],
-          confidence: 'High (0.88)',
-          ifIgnored: 'Potential progression to acute coronary instability',
-        },
-        actions: [
-          { label:'APPROVE PROTOCOL', cls:'btn-approve', fn:'approveProtocol', arg:'7' },
-          { label:'DISMISS', cls:'btn-dismiss', fn:'dismissAlert', arg:'a2' },
-        ]
-      },
-      {
-        id: 'a3', severity: 'warning', room: 'Room 103-C',
-        title: '🌡️ Fever Spike — Ward Patient',
-        desc: 'Infection-related symptom burden increased this shift for a pneumonia case. Antibiotic escalation suggested.',
-        agent: '🛡️ SentinelAgent', time: this.timeStr(-12),
-        explain: {
-          trigger: 'Fever rise in infectious respiratory case',
-          drivers: ['Infection symptom escalation', 'Pneumonia context', 'EWS trending upward'],
-          confidence: 'Moderate-High (0.79)',
-          ifIgnored: 'Delayed antimicrobial adjustment and prolonged recovery',
-        },
-        actions: [
-          { label:'APPROVE TX CHANGE', cls:'btn-approve', fn:'approveTxChange', arg:'4' },
-          { label:'DISMISS', cls:'btn-dismiss', fn:'dismissAlert', arg:'a3' },
-        ]
-      },
-      {
-        id: 'a4', severity: 'info', room: 'Wing B',
-        title: '🌿 Energy Optimization Ready',
-        desc: 'GreenAgent recommends eco-mode for 8 non-critical devices. Estimated saving: ₹4,200/hr.',
-        agent: '🌿 GreenAgent', time: this.timeStr(-18),
-        explain: {
-          trigger: 'Low acuity window with non-critical devices identified',
-          drivers: ['8 non-critical devices', 'Current occupancy profile', 'Energy baseline variance'],
-          confidence: 'Moderate (0.72)',
-          ifIgnored: 'Higher operational energy spend during low-demand periods',
-        },
-        actions: [
-          { label:'ACTIVATE ECO MODE', cls:'btn-approve', fn:'activateEco', arg:'' },
-          { label:'DISMISS', cls:'btn-dismiss', fn:'dismissAlert', arg:'a4' },
-        ]
-      },
-    ];
-  }
-
-  initAgentLog() {
-    const t = this.timeStr;
-    this.agentLog = [
-      { agent:'command', text:'All 5 agents initialized. Hospital monitoring active. 127 patients under surveillance.', time:t(-35) },
-      { agent:'green',   text:'HVAC optimization complete. Wing A energy reduced by 18%. Eco lighting active in corridors.', time:t(-28) },
-      { agent:'flow',    text:'Bed occupancy: 87%. 8 beds available. Predicted 3 discharges by 18:00. Shifts reassigned.', time:t(-22) },
-      { agent:'guide',   text:'Medication information request handled for an inpatient through multilingual support.', time:t(-18) },
-      { agent:'sentinel',text:'Routine vital check complete. 9 stable, 3 warning, 2 critical. EWS scores updated.', time:t(-15) },
-      { agent:'command', text:'Coordinating ICU response for high-acuity case. Bed reserved and escalation acknowledged.', time:t(-10) },
-      { agent:'flow',    text:'Additional monitoring duty assigned for one high-priority inpatient case.', time:t(-8) },
-      { agent:'sentinel',text:'ALERT: Cardiac stress markers detected in monitored case. Escalated to CommandAgent.', time:t(-7) },
-      { agent:'green',   text:'Night cycle optimization ready. Recommend eco-mode for 8 devices in Wing B.', time:t(-5) },
-      { agent:'guide',   text:'3 patient wayfinding requests handled. Radiology escort arranged for Room 105.', time:t(-3) },
-      { agent:'command', text:'Priority queue updated. 4 active alerts. Human approval required for critical cases.', time:t(-1) },
-    ];
-  }
-
   timeStr(offsetMin = 0) {
     const d = new Date(Date.now() + offsetMin * 60000);
     return d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', hour12:false });
@@ -326,6 +389,8 @@ class MediNexus {
 
   start() {
     this.isRunning = true;
+    clearInterval(this.backendSyncTimer);
+    this.backendSyncTimer = setInterval(() => this.loadPatientsFromBackend(), 5000);
     this.startLiveLoops();
     this.clockTimer  = setInterval(() => this.emit('clock', new Date()), 1000);
   }
@@ -333,11 +398,14 @@ class MediNexus {
   stop() {
     this.isRunning = false;
     this.stopLiveLoops();
+    clearInterval(this.backendSyncTimer);
     clearInterval(this.clockTimer);
   }
 
   startLiveLoops() {
     if (this.demoMode) return;
+    const hasSimulatedPatients = this.patients.some(p => p.source !== 'backend');
+    if (!hasSimulatedPatients) return;
     clearInterval(this.vitalsTimer);
     clearInterval(this.agentTimer);
     this.vitalsTimer = setInterval(() => this.updateVitals(), 2500);
@@ -351,7 +419,10 @@ class MediNexus {
 
   updateVitals() {
     this.tick++;
+    let hasSimulatedPatients = false;
     this.patients.forEach(p => {
+      if (p.source === 'backend') return;
+      hasSimulatedPatients = true;
       const jitter = (range) => (Math.random() - 0.5) * range;
       // Drift towards normal or deteriorate
       const isDet = p.trending === 'critical';
@@ -384,8 +455,8 @@ class MediNexus {
       }
     });
 
-    // Random bed change
-    if (this.tick % 6 === 0) {
+    // Random bed change only for simulated (non-backend) records
+    if (hasSimulatedPatients && this.tick % 6 === 0) {
       const idx = Math.floor(Math.random() * this.beds.length);
       const statuses = ['available','occupied','occupied','reserved'];
       this.beds[idx].status = statuses[Math.floor(Math.random() * statuses.length)];
@@ -429,6 +500,9 @@ class MediNexus {
   }
 
   runAgent() {
+    const hasSimulatedPatients = this.patients.some(p => p.source !== 'backend');
+    if (!hasSimulatedPatients) return;
+
     const messages = {
       sentinel: [
         'Vital scan complete. Monitoring 12 active patients.',
@@ -487,6 +561,7 @@ class MediNexus {
     this.addAgentMsg('command', `Transfer of ${name} approved by clinician. ICU bed assigned. Transport en route.`);
     this.addAgentMsg('flow', `Bed allocation confirmed for ${name}. Staff notified.`);
     this.stats.alertsResolved++;
+    this.emit('stats', this.stats);
     this.emit('approved', this.approvedActions);
   }
 
@@ -496,6 +571,7 @@ class MediNexus {
     this.approvedActions.unshift({ text:`MI Protocol activated for ${name}`, time:this.timeStr(0) });
     this.addAgentMsg('sentinel', `MI protocol approved. Cardiac team alerted for ${name}. Cath lab on standby.`);
     this.stats.alertsResolved++;
+    this.emit('stats', this.stats);
     this.emit('approved', this.approvedActions);
   }
 
@@ -505,7 +581,131 @@ class MediNexus {
     this.approvedActions.unshift({ text:`Treatment change approved for ${name}`, time:this.timeStr(0) });
     this.addAgentMsg('sentinel', `Antibiotic escalation approved for ${name}. Pharmacy notified.`);
     this.stats.alertsResolved++;
+    this.emit('stats', this.stats);
     this.emit('approved', this.approvedActions);
+  }
+
+  async updateBedStatus(bedId, status) {
+    try {
+      const res = await fetch(`${API_BASE}/api/beds/${bedId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        throw new Error(await this.readApiErrorDetail(res, 'Unable to update bed status'));
+      }
+      await this.loadPatientsFromBackend();
+      return { ok: true, error: null };
+    } catch (err) {
+      this.addAgentMsg('command', `Bed status update failed for bed ${bedId}: ${String(err.message || err)}`);
+      return { ok: false, error: String(err.message || err) };
+    }
+  }
+
+  async readApiErrorDetail(response, fallbackMessage) {
+    try {
+      const data = await response.json();
+      if (data && data.detail) return String(data.detail);
+    } catch (_) {
+      // Ignore JSON parse failures and use text fallback.
+    }
+    try {
+      const text = await response.text();
+      if (text) return text;
+    } catch (_) {
+      // Ignore text read failure and use fallback.
+    }
+    return fallbackMessage;
+  }
+
+  async reserveBed(bedId) {
+    const result = await this.updateBedStatus(bedId, 'reserved');
+    if (!result.ok) return result;
+    this.approvedActions.unshift({ text: `Bed #${bedId} marked reserved`, time: this.timeStr(0) });
+    this.stats.alertsResolved++;
+    this.emit('stats', this.stats);
+    this.emit('approved', this.approvedActions);
+    this.addAgentMsg('flow', `Bed #${bedId} reserved for incoming assignment.`);
+    return { ok: true, error: null };
+  }
+
+  async releaseBed(bedId) {
+    const result = await this.updateBedStatus(bedId, 'available');
+    if (!result.ok) return result;
+    this.approvedActions.unshift({ text: `Bed #${bedId} released to available pool`, time: this.timeStr(0) });
+    this.stats.alertsResolved++;
+    this.emit('stats', this.stats);
+    this.emit('approved', this.approvedActions);
+    this.addAgentMsg('flow', `Bed #${bedId} released and ready for allocation.`);
+    return { ok: true, error: null };
+  }
+
+  async assignBedToPatient(bedId, patientId) {
+    try {
+      const res = await fetch(`${API_BASE}/api/beds/${bedId}/assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patient_id: Number(patientId) }),
+      });
+      if (!res.ok) {
+        throw new Error(await this.readApiErrorDetail(res, 'Unable to assign bed'));
+      }
+      await this.loadPatientsFromBackend();
+      this.approvedActions.unshift({ text: `Assigned bed #${bedId} to patient #${patientId}`, time:this.timeStr(0) });
+      this.stats.alertsResolved++;
+      this.emit('stats', this.stats);
+      this.emit('approved', this.approvedActions);
+      this.addAgentMsg('flow', `Bed #${bedId} assigned to patient #${patientId}.`);
+      return { ok: true, error: null };
+    } catch (err) {
+      this.addAgentMsg('command', `Bed assignment failed for bed ${bedId}: ${String(err.message || err)}`);
+      return { ok: false, error: String(err.message || err) };
+    }
+  }
+
+  async vacateBed(bedId) {
+    try {
+      const res = await fetch(`${API_BASE}/api/beds/${bedId}/vacate`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        throw new Error(await this.readApiErrorDetail(res, 'Unable to vacate bed'));
+      }
+      await this.loadPatientsFromBackend();
+      this.approvedActions.unshift({ text: `Vacated bed #${bedId}`, time:this.timeStr(0) });
+      this.stats.alertsResolved++;
+      this.emit('stats', this.stats);
+      this.emit('approved', this.approvedActions);
+      this.addAgentMsg('flow', `Bed #${bedId} vacated and added back to capacity.`);
+      return { ok: true, error: null };
+    } catch (err) {
+      this.addAgentMsg('command', `Vacate action failed for bed ${bedId}: ${String(err.message || err)}`);
+      return { ok: false, error: String(err.message || err) };
+    }
+  }
+
+  async transferPatientToBed(sourceBedId, targetBedId) {
+    try {
+      const res = await fetch(`${API_BASE}/api/beds/${sourceBedId}/transfer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_bed_id: Number(targetBedId) }),
+      });
+      if (!res.ok) {
+        throw new Error(await this.readApiErrorDetail(res, 'Unable to transfer patient'));
+      }
+      await this.loadPatientsFromBackend();
+      this.approvedActions.unshift({ text: `Transferred patient from bed #${sourceBedId} to bed #${targetBedId}`, time:this.timeStr(0) });
+      this.stats.alertsResolved++;
+      this.emit('stats', this.stats);
+      this.emit('approved', this.approvedActions);
+      this.addAgentMsg('flow', `Patient transfer completed: bed #${sourceBedId} -> bed #${targetBedId}.`);
+      return { ok: true, error: null };
+    } catch (err) {
+      this.addAgentMsg('command', `Transfer failed (${sourceBedId} -> ${targetBedId}): ${String(err.message || err)}`);
+      return { ok: false, error: String(err.message || err) };
+    }
   }
 
   activateEco() {
@@ -515,6 +715,7 @@ class MediNexus {
     this.stats.energySaved = Math.min(35, this.stats.energySaved + 3);
     this.approvedActions.unshift({ text:'Eco-mode activated — Wing B devices', time:this.timeStr(0) });
     this.addAgentMsg('green', 'Eco-mode activated for 8 devices in Wing B. Saving 8 kWh. Monthly projection: ₹1.2L saved.');
+    this.emit('stats', this.stats);
     this.emit('approved', this.approvedActions);
     this.emit('energy', this.energyData);
   }

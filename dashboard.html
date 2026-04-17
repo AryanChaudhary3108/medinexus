@@ -3,38 +3,23 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Command Center | MediNexus</title>
+  <title>Bed Management | MediNexus</title>
   <link rel="stylesheet" href="css/style.css"/>
   <style>
     .dashboard-wrap { padding-top: var(--nav-h); }
-    .patients-grid-section { padding: 0; }
-    .section-tabs {
-      display: flex; gap: 0.25rem;
-      padding: 0.75rem 1.25rem;
-      border-bottom: 1px solid var(--border);
+    .page-head {
+      padding: 1rem 1.1rem 0.2rem;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 0.8rem;
+      flex-wrap: wrap;
     }
-    .tab-btn {
-      padding: 0.4rem 1.1rem; border-radius: 6px; border: none;
-      font-family: 'Space Grotesk', sans-serif; font-size: 0.8rem;
-      font-weight: 600; cursor: pointer; transition: all 0.2s;
-      background: none; color: var(--muted); letter-spacing: 0.5px;
-    }
-    .tab-btn.active, .tab-btn:hover {
-      background: var(--primary-g); color: var(--primary);
-    }
-    .role-tabs {
-      display:flex; gap:0.25rem; padding:0.35rem 1.25rem 0.65rem;
-      border-bottom: 1px solid var(--border);
-    }
-    .role-btn {
-      padding:0.3rem 0.8rem; border-radius:6px; border:1px solid var(--border);
-      background:none; color:var(--muted); font-size:0.72rem; font-weight:700;
-      font-family:'Space Grotesk',sans-serif; cursor:pointer;
-    }
-    .role-btn.active, .role-btn:hover { background:var(--primary-g); color:var(--primary); border-color:rgba(14,165,233,0.4); }
+    .page-title { font-size: 1.15rem; font-weight: 700; }
+    .page-sub { font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
     .ops-strip {
       display:flex; align-items:center; justify-content:space-between;
-      gap:0.6rem; padding:0.55rem 1.25rem 0.7rem; border-bottom:1px solid var(--border);
+      gap:0.6rem; padding:0.7rem 1.1rem; border-bottom:1px solid var(--border);
       flex-wrap:wrap;
     }
     .ops-left, .ops-right { display:flex; align-items:center; gap:0.45rem; flex-wrap:wrap; }
@@ -52,160 +37,237 @@
       font-size:0.7rem; font-weight:700; font-family:'Space Grotesk',sans-serif;
     }
     .demo-toggle.active { color:#06b6d4; border-color:rgba(6,182,212,0.45); background:rgba(6,182,212,0.1); }
-    .why-btn {
-      border:1px solid rgba(14,165,233,0.35); background:rgba(14,165,233,0.08);
-      color:#38bdf8; border-radius:6px; padding:0.28rem 0.55rem;
-      font-size:0.66rem; font-weight:700; cursor:pointer; font-family:'Space Grotesk',sans-serif;
+    .beds-full {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 6px;
+      padding: 1rem;
     }
-    .why-btn:hover { background:rgba(14,165,233,0.16); }
-    /* Beds grid full */
-    .beds-full { display: grid; grid-template-columns: repeat(12,1fr); gap: 5px; padding: 1rem; }
     .bed-cell-full {
-      aspect-ratio: 1.2; border-radius: 5px;
-      display: flex; flex-direction: column;
+      aspect-ratio: 1.25;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
       align-items: center; justify-content: center;
-      font-size: 0.55rem; font-weight: 600;
-      font-family: var(--mono); cursor: default;
-      position: relative; transition: all 0.3s;
+      font-size: 0.58rem;
+      font-weight: 700;
+      font-family: var(--mono);
+      cursor: default;
+      border: 1px solid var(--border);
+      transition: transform 0.2s ease;
     }
-    .bed-cell-full:hover { transform: scale(1.1); z-index: 1; }
-    .bcf-num { font-size: 0.62rem; margin-bottom: 2px; }
-    .bcf-icon { font-size: 0.7rem; }
-    /* Right panel */
+    .bed-cell-full:hover { transform: translateY(-2px); }
+    .bcf-num { font-size: 0.7rem; margin-bottom: 2px; }
+    .bcf-label { font-size: 0.56rem; opacity: 0.9; }
     .right-panel { display: flex; flex-direction: column; gap: 1rem; }
     .no-alerts {
       text-align: center; padding: 2rem;
       color: var(--muted); font-size: 0.85rem;
     }
-    /* Alert list scrollable, cards fully visible */
     .alerts-list { max-height: 480px; overflow-y: auto; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
     .alert-card { overflow: visible !important; }
     .alert-title { font-size: 0.88rem; font-weight: 700; margin: 0.35rem 0; line-height: 1.4; white-space: normal; }
     .alert-desc  { font-size: 0.77rem; color: var(--muted); line-height: 1.5; white-space: normal; margin-bottom: 0.5rem; }
-    /* Stat icon images */
     .stat-icon img { width: 22px; height: 22px; object-fit: contain; }
-    /* Card title agent images */
     .card-title img { width: 20px; height: 20px; object-fit: contain; border-radius: 4px; }
-    /* Agent feed images */
     .agent-avatar img { width: 100%; height: 100%; object-fit: contain; border-radius: 6px; }
-    .ai-thinking {
-      display: flex; align-items: center; gap: 0.5rem;
-      padding: 0.5rem 0.75rem;
-      font-size: 0.75rem; color: var(--muted);
-      font-family: var(--mono);
-    }
-    .thinking-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--primary);
-      animation: thinkPulse 1.4s ease-in-out infinite;
-    }
-    .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
-    .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes thinkPulse { 0%,80%,100% { transform:scale(0.8); opacity:0.4; } 40% { transform:scale(1.2); opacity:1; } }
     .approved-empty { text-align:center; padding: 1rem; font-size: 0.78rem; color: var(--muted); }
-    .split-layout {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 1rem; padding: 1rem;
+    .ward-load {
+      padding: 0.9rem 1rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
     }
-    .patient-summary-grid {
-      display:grid; grid-template-columns:1fr 1fr;
-      gap:0.45rem; margin-top:0.4rem;
+    .ward-row { display: grid; grid-template-columns: 95px 1fr 90px; gap: 0.55rem; align-items: center; }
+    .ward-name { font-size: 0.74rem; color: var(--muted); font-weight: 700; }
+    .ward-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      overflow: hidden;
     }
-    .patient-summary-pill {
-      border:1px solid var(--border); border-radius:8px;
-      background:rgba(255,255,255,0.02); padding:0.45rem 0.5rem;
+    .ward-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #38bdf8, #22d3ee); }
+    .ward-meta { font-size: 0.7rem; color: var(--text); text-align: right; }
+    .section-note { font-size: 0.72rem; color: var(--muted); padding: 0 1rem 0.9rem; }
+    .bed-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 70;
+      background: rgba(2,6,23,0.72);
+      padding: 1rem;
     }
-    .patient-summary-label {
-      font-size:0.58rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;
+    .bed-modal.open { display: flex; }
+    .bed-sheet {
+      width: min(520px, 100%);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 24px 70px rgba(2,6,23,0.5);
+      overflow: hidden;
     }
-    .patient-summary-value {
-      font-size:0.72rem; line-height:1.22; font-weight:700; margin-top:2px;
+    .bed-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--border);
     }
-    .patient-detail-hint {
-      margin-top:0.45rem; padding-top:0.45rem; border-top:1px dashed var(--border);
-      font-size:0.66rem; color:var(--primary);
+    .bed-title { font-size: 0.95rem; font-weight: 700; }
+    .bed-sub { font-size: 0.73rem; color: var(--muted); margin-top: 0.2rem; }
+    .bed-close {
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--muted);
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 0.3rem 0.7rem;
+      cursor: pointer;
+      font-family:'Space Grotesk',sans-serif;
     }
-    .dash-detail-modal {
-      position: fixed; inset: 0; display: none;
-      background: rgba(2,6,23,0.72); z-index: 50;
-      align-items: center; justify-content: center; padding: 1rem;
+    .bed-close:hover { color: var(--text); border-color: var(--primary); }
+    .bed-body { padding: 0.9rem 1rem 1rem; }
+    .bed-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 0.45rem;
+      margin-bottom: 0.8rem;
     }
-    .dash-detail-modal.open { display:flex; }
-    .dash-detail-sheet {
-      width: min(900px, 100%); max-height: 88vh; overflow-y: auto;
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
-      box-shadow: 0 24px 80px rgba(2,6,23,0.55);
+    .bed-pill {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.02);
+      padding: 0.45rem 0.55rem;
     }
-    .dash-detail-head {
-      display:flex; justify-content:space-between; align-items:flex-start;
-      gap:1rem; padding:0.95rem 1.1rem; border-bottom:1px solid var(--border);
-      position: sticky; top: 0; background: var(--bg-card); z-index: 2;
+    .bed-pill-label { font-size: 0.58rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .bed-pill-value { font-size: 0.78rem; font-weight: 700; margin-top: 2px; }
+    .bed-pill-value.hoverable { cursor: help; position: relative; }
+    .patient-tooltip {
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(11, 18, 32, 0.98);
+      border: 1px solid rgba(14, 165, 233, 0.4);
+      border-radius: 8px;
+      padding: 0.5rem 0.7rem;
+      font-size: 0.7rem;
+      color: #e2e8f0;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 100;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
+      box-shadow: 0 8px 24px rgba(2, 6, 23, 0.6);
+      margin-bottom: 0.5rem;
     }
-    .dash-detail-title { font-size:1rem; font-weight:700; }
-    .dash-detail-meta { font-size:0.74rem; color:var(--muted); margin-top:0.2rem; }
-    .dash-detail-close {
-      border:1px solid var(--border); background:none; color:var(--muted);
-      border-radius:6px; padding:0.35rem 0.75rem; cursor:pointer;
-      font-size:0.76rem; font-weight:700; font-family:'Space Grotesk',sans-serif;
+    .patient-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: rgba(11, 18, 32, 0.98);
     }
-    .dash-detail-close:hover { color:var(--text); border-color:var(--primary); }
-    .dash-detail-body { padding: 1rem 1.1rem 1.2rem; }
-    .dash-detail-grid {
-      display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:0.7rem;
+    .bed-pill-value.hoverable:hover .patient-tooltip {
+      opacity: 1;
+      visibility: visible;
     }
-    .dash-detail-card {
-      border:1px solid var(--border); border-radius:10px;
-      background:rgba(255,255,255,0.02); padding:0.75rem;
+    .tooltip-row {
+      display: flex;
+      gap: 0.4rem;
+      margin: 0.2rem 0;
+      align-items: center;
     }
-    .dash-detail-card h4 {
-      font-size:0.68rem; letter-spacing:1.2px; text-transform:uppercase;
-      color:var(--muted); margin:0 0 0.45rem;
+    .tooltip-label {
+      color: #94a3b8;
+      font-weight: 600;
     }
-    .dash-detail-line { font-size:0.77rem; line-height:1.42; margin:0.16rem 0; }
-    .dash-detail-line b { color:var(--primary); margin-right:0.25rem; }
-    .explain-modal {
-      position: fixed; inset: 0; display: none;
-      background: rgba(2,6,23,0.72); z-index: 52;
-      align-items: center; justify-content: center; padding: 1rem;
+    .bed-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-bottom: 0.75rem;
     }
-    .explain-modal.open { display:flex; }
-    .explain-sheet {
-      width:min(760px, 100%); max-height:88vh; overflow-y:auto;
-      background:var(--bg-card); border:1px solid var(--border); border-radius:14px;
-      box-shadow:0 24px 80px rgba(2,6,23,0.55);
+    .bed-btn {
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--muted);
+      border-radius: 7px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 0.34rem 0.72rem;
+      cursor: pointer;
+      font-family:'Space Grotesk',sans-serif;
     }
-    .explain-head {
-      display:flex; justify-content:space-between; align-items:flex-start; gap:1rem;
-      padding:0.95rem 1.05rem; border-bottom:1px solid var(--border);
-      position:sticky; top:0; background:var(--bg-card); z-index:2;
+    .bed-btn.primary { color: var(--primary); border-color: rgba(14,165,233,0.45); background: rgba(14,165,233,0.12); }
+    .bed-btn.success { color: #34d399; border-color: rgba(16,185,129,0.45); background: rgba(16,185,129,0.12); }
+    .bed-btn.warn { color: #f59e0b; border-color: rgba(245,158,11,0.45); background: rgba(245,158,11,0.12); }
+    .bed-btn.danger { color: #f87171; border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.12); }
+    .assign-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.45rem;
+      align-items: center;
+      margin-top: 0.25rem;
     }
-    .explain-title { font-size:0.95rem; font-weight:700; }
-    .explain-sub { font-size:0.72rem; color:var(--muted); margin-top:0.2rem; }
-    .explain-close {
-      border:1px solid var(--border); background:none; color:var(--muted);
-      border-radius:6px; padding:0.35rem 0.75rem; cursor:pointer;
-      font-size:0.76rem; font-weight:700; font-family:'Space Grotesk',sans-serif;
+    .transfer-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.45rem;
+      align-items: center;
+      margin-top: 0.5rem;
     }
-    .explain-close:hover { color:var(--text); border-color:var(--primary); }
-    .explain-body { padding:0.95rem 1.05rem 1.1rem; }
-    .explain-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:0.65rem; }
-    .explain-card {
-      border:1px solid var(--border); border-radius:10px; background:rgba(255,255,255,0.02);
-      padding:0.72rem;
+    .assign-select {
+      background-color: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      padding: 0.44rem 2rem 0.44rem 0.62rem;
+      font-size: 0.78rem;
+      font-family: 'Space Grotesk', sans-serif;
+      outline: none;
+      min-height: 36px;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, #94a3b8 50%),
+        linear-gradient(135deg, #94a3b8 50%, transparent 50%);
+      background-position:
+        calc(100% - 14px) 52%,
+        calc(100% - 8px) 52%;
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+      color-scheme: dark;
     }
-    .explain-card h4 { font-size:0.66rem; letter-spacing:1.1px; text-transform:uppercase; color:var(--muted); margin:0 0 0.4rem; }
-    .explain-line { font-size:0.77rem; line-height:1.45; margin:0.2rem 0; }
-    .drivers { margin-top:0.35rem; display:flex; flex-wrap:wrap; gap:0.35rem; }
-    .driver-tag {
-      font-size:0.66rem; color:#38bdf8; border:1px solid rgba(14,165,233,0.35);
-      background:rgba(14,165,233,0.08); border-radius:6px; padding:0.2rem 0.45rem;
+    .assign-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(14,165,233,0.2);
     }
-    @media (max-width:900px) {
-      .patient-summary-grid { grid-template-columns:1fr; }
-      .dash-detail-grid { grid-template-columns:1fr; }
-      .explain-grid { grid-template-columns:1fr; }
+    .assign-select option {
+      background: #0b1220;
+      color: #e2e8f0;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.78rem;
     }
-    @media (max-width:900px) { .split-layout { grid-template-columns: 1fr; } }
+    .assign-select option[disabled] {
+      color: #94a3b8;
+    }
+    .bed-error { font-size: 0.72rem; color: #f87171; min-height: 1.1rem; }
+    @media (max-width: 960px) {
+      .beds-full { grid-template-columns: repeat(8, 1fr); }
+    }
+    @media (max-width: 760px) {
+      .beds-full { grid-template-columns: repeat(6, 1fr); }
+      .ward-row { grid-template-columns: 80px 1fr 74px; }
+    }
   </style>
 </head>
 <body>
@@ -214,14 +276,13 @@
       <div class="nav-logo-icon"><img src="img/logo.png" alt="MediNexus" style="width:32px;height:32px;object-fit:contain;"/></div>
       <div>
         <div class="nav-logo-text">MediNexus</div>
-        <div class="nav-tagline">Hospital Command Center</div>
+        <div class="nav-tagline">Hospital Bed Management</div>
       </div>
     </div>
     <ul class="nav-links">
       <li><a href="index.html">Home</a></li>
-      <li><a href="dashboard.html" class="active">Command Center</a></li>
+      <li><a href="dashboard.html" class="active">Bed Management</a></li>
       <li><a href="patients.html">Patients</a></li>
-      <li><a href="energy.html">Energy</a></li>
       <li><a href="companion.html">CareGuide</a></li>
     </ul>
     <div class="nav-right">
@@ -235,85 +296,69 @@
   </nav>
 
   <div class="dashboard-wrap main">
-    <!-- STATS BAR -->
+    <div class="page-head">
+      <div>
+        <div class="page-title">Bed Management Overview</div>
+        <div class="page-sub">Clean operational view for bed status, ward load, and pending bed actions.</div>
+      </div>
+    </div>
+
     <div class="stats-bar">
       <div class="stat-card">
-        <div class="stat-icon blue"><img src="img/agent_careguide.png" alt="patients"/></div>
+        <div class="stat-icon blue"><img src="img/agent_flow.png" alt="beds"/></div>
         <div class="stat-info">
-          <div class="stat-value blue" id="stat-patients">127</div>
-          <div class="stat-label">Total Patients</div>
+          <div class="stat-value blue" id="stat-total-beds">0</div>
+          <div class="stat-label">Total Beds</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon red"><img src="img/agent_sentinel.png" alt="alerts"/></div>
+        <div class="stat-icon red"><img src="img/agent_sentinel.png" alt="occupied"/></div>
         <div class="stat-info">
-          <div class="stat-value red pulse" id="stat-critical">3</div>
-          <div class="stat-label">Critical Alerts</div>
+          <div class="stat-value red" id="stat-occupied-beds">0</div>
+          <div class="stat-label">Occupied Beds</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon amber"><img src="img/agent_flow.png" alt="beds"/></div>
+        <div class="stat-icon green"><img src="img/agent_green.png" alt="available"/></div>
         <div class="stat-info">
-          <div class="stat-value amber" id="stat-beds">87%</div>
-          <div class="stat-label">Bed Occupancy</div>
+          <div class="stat-value green" id="stat-available-beds">0</div>
+          <div class="stat-label">Available Beds</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon green"><img src="img/agent_green.png" alt="energy"/></div>
+        <div class="stat-icon amber"><img src="img/agent_command.png" alt="occupancy"/></div>
         <div class="stat-info">
-          <div class="stat-value green" id="stat-energy">22%</div>
-          <div class="stat-label">Energy Saved</div>
+          <div class="stat-value amber" id="stat-occupancy-rate">0%</div>
+          <div class="stat-label">Occupancy Rate</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon purple"><img src="img/agent_command.png" alt="resolved"/></div>
         <div class="stat-info">
-          <div class="stat-value" id="stat-resolved">14</div>
-          <div class="stat-label">Alerts Resolved</div>
+          <div class="stat-value" id="stat-pending-actions">0</div>
+          <div class="stat-label">Pending Actions</div>
         </div>
       </div>
     </div>
 
-    <!-- MAIN LAYOUT -->
+    <div class="ops-strip">
+      <div class="ops-left">
+        <span class="status-chip warn" id="connection-chip">Connecting to backend...</span>
+        <span class="status-chip" id="source-chip">Data: backend</span>
+      </div>
+      <div class="ops-right">
+        <span class="status-chip" id="demo-chip">Live updates running</span>
+        <button class="demo-toggle" id="demo-toggle" onclick="toggleDemoMode()">Enable Demo Mode</button>
+      </div>
+    </div>
+
     <div class="dashboard-layout" style="align-items:start;">
 
-      <!-- LEFT: Patient Grid + Bed Map -->
+      <!-- LEFT: Bed overview -->
       <div>
-        <!-- Patient Symptoms -->
-        <div class="card" style="margin-bottom:1rem;">
-          <div class="card-header">
-            <div class="card-title"><img src="img/agent_sentinel.png" alt="sentinel"/> Live Symptom Observation — SentinelAgent</div>
-            <div class="section-tabs" style="padding:0;border:none;">
-              <button class="tab-btn active" onclick="filterPatients('all',this)">All</button>
-              <button class="tab-btn" onclick="filterPatients('critical',this)">Critical</button>
-              <button class="tab-btn" onclick="filterPatients('warning',this)">Warning</button>
-              <button class="tab-btn" onclick="filterPatients('stable',this)">Stable</button>
-            </div>
-          </div>
-          <div class="role-tabs">
-            <button class="role-btn active" onclick="setViewRole('nurse',this)">Nurse View</button>
-            <button class="role-btn" onclick="setViewRole('doctor',this)">Doctor View</button>
-            <button class="role-btn" onclick="setViewRole('admin',this)">Admin View</button>
-          </div>
-          <div class="ops-strip">
-            <div class="ops-left">
-              <span class="status-chip warn" id="connection-chip">Checking backend...</span>
-              <span class="status-chip" id="source-chip">Data: fallback</span>
-            </div>
-            <div class="ops-right">
-              <span class="status-chip" id="demo-chip">Live updates running</span>
-              <button class="demo-toggle" id="demo-toggle" onclick="toggleDemoMode()">Enable Demo Mode</button>
-            </div>
-          </div>
-          <div class="patients-grid patients-grid-section" id="patients-grid">
-            <!-- Injected by JS -->
-          </div>
-        </div>
-
-        <!-- Bed Map -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title"><img src="img/agent_flow.png" alt="flow"/> Bed Management — FlowAgent</div>
+            <div class="card-title"><img src="img/agent_flow.png" alt="flow"/> Bed Map</div>
             <div class="card-badge cb-blue" id="bed-avail-badge">8 Available</div>
           </div>
           <div id="beds-grid" class="beds-full"></div>
@@ -324,50 +369,44 @@
             <div class="legend-item"><div class="legend-dot" style="background:rgba(239,68,68,0.6);"></div>Critical</div>
             <div class="legend-item"><div class="legend-dot" style="background:rgba(139,92,246,0.6);"></div>ICU</div>
           </div>
+          <div class="section-note">Color-coded map updates automatically from backend-driven state.</div>
+        </div>
+
+        <div class="card" style="margin-top:1rem;">
+          <div class="card-header">
+            <div class="card-title"><img src="img/agent_careguide.png" alt="load"/> Ward Load</div>
+            <div class="card-badge cb-blue" id="ward-total-badge">0 Active Patients</div>
+          </div>
+          <div class="ward-load" id="ward-load"></div>
         </div>
       </div>
 
-      <!-- RIGHT: Alerts + Agent Feed + Actions -->
+      <!-- RIGHT: Actions and logs -->
       <div class="right-panel">
-        <!-- ALERTS -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title"><img src="img/agent_sentinel.png" alt="alerts"/> Alerts — Approval Required</div>
+            <div class="card-title"><img src="img/agent_sentinel.png" alt="alerts"/> Bed Action Queue</div>
             <div class="card-badge cb-red" id="alert-badge">4 PENDING</div>
           </div>
           <div class="alerts-list" id="alerts-list">
-            <!-- Injected by JS -->
           </div>
         </div>
 
-        <!-- AGENT FEED -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title"><img src="img/agent_command.png" alt="command"/> Agent Activity Feed</div>
-            <div class="ai-thinking">
-              <div class="thinking-dot"></div>
-              <div class="thinking-dot"></div>
-              <div class="thinking-dot"></div>
-              <span style="margin-left:0.25rem;">Agents processing...</span>
-            </div>
+            <div class="card-title"><img src="img/agent_command.png" alt="command"/> Operations Feed</div>
           </div>
           <div class="agent-feed" id="agent-feed">
-            <!-- Injected by JS -->
           </div>
         </div>
 
-        <!-- APPROVED ACTIONS LOG -->
         <div class="card">
           <div class="card-header">
             <div class="card-title"><img src="img/logo.png" alt="approved"/> Approved Actions Log</div>
-            <div class="card-badge cb-green" id="resolved-badge">14 Resolved Today</div>
+            <div class="card-badge cb-green" id="resolved-badge">0 Resolved Today</div>
           </div>
           <div class="actions-log" id="actions-log">
-            <div class="action-item"><span class="action-check">✓</span>EWS alert for high-acuity ICU patient acknowledged<span class="action-time">14:22</span></div>
-            <div class="action-item"><span class="action-check">✓</span>Eco-mode activated — Wing C<span class="action-time">13:55</span></div>
-            <div class="action-item"><span class="action-check">✓</span>ICU bed 2 reserved for critical care case<span class="action-time">13:40</span></div>
-            <div class="action-item"><span class="action-check">✓</span>Antibiotic escalation approved for ward infection case<span class="action-time">12:18</span></div>
-            <div class="action-item"><span class="action-check">✓</span>Staff reassignment: Nurse Patel → Ward B<span class="action-time">11:50</span></div>
+            <div class="approved-empty">No approved actions yet.</div>
           </div>
         </div>
       </div>
@@ -375,52 +414,50 @@
     </div>
   </div>
 
-  <div class="dash-detail-modal" id="dash-detail-modal" onclick="closeDashboardPatientDetail(event)">
-    <div class="dash-detail-sheet" onclick="event.stopPropagation()">
-      <div class="dash-detail-head">
+  <div class="bed-modal" id="bed-modal" onclick="closeBedModal(event)">
+    <div class="bed-sheet" onclick="event.stopPropagation()">
+      <div class="bed-head">
         <div>
-          <div class="dash-detail-title" id="dash-detail-title">Patient Detail</div>
-          <div class="dash-detail-meta" id="dash-detail-meta">Operational detail view</div>
+          <div class="bed-title" id="bed-title">Bed Action</div>
+          <div class="bed-sub" id="bed-sub">Manage bed availability and assignment</div>
         </div>
-        <button class="dash-detail-close" onclick="closeDashboardPatientDetail()">Close</button>
+        <button class="bed-close" onclick="closeBedModal()">Close</button>
       </div>
-      <div class="dash-detail-body" id="dash-detail-body"></div>
-    </div>
-  </div>
-
-  <div class="explain-modal" id="explain-modal" onclick="closeExplainability(event)">
-    <div class="explain-sheet" onclick="event.stopPropagation()">
-      <div class="explain-head">
-        <div>
-          <div class="explain-title" id="explain-title">Alert Explainability</div>
-          <div class="explain-sub" id="explain-sub">Why this alert was raised</div>
+      <div class="bed-body">
+        <div class="bed-grid" id="bed-info-grid"></div>
+        <div class="bed-actions" id="bed-actions"></div>
+        <div class="assign-row" id="assign-row">
+          <select class="assign-select" id="bed-patient-select"></select>
+          <button class="bed-btn success" onclick="submitAssignBed()">Assign</button>
         </div>
-        <button class="explain-close" onclick="closeExplainability()">Close</button>
+        <div class="transfer-row" id="transfer-row" style="display:none;">
+          <select class="assign-select" id="bed-transfer-select"></select>
+          <button class="bed-btn primary" onclick="submitTransferBed()">Transfer Patient</button>
+        </div>
+        <div class="bed-error" id="bed-error"></div>
       </div>
-      <div class="explain-body" id="explain-body"></div>
     </div>
   </div>
 
   <script src="js/simulation.js"></script>
   <script>
     const sim = new MediNexus();
-    let currentFilter = 'all';
-    let activeRole = 'nurse';
-
-    function escHtml(s) {
-      return String(s || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-    }
+    const AGENT_CARD_MAP = {
+      sentinel: { name: 'SentinelAgent', img: 'img/agent_sentinel.png', cls: 'avatar-sentinel', nameCls: 'name-sentinel' },
+      flow: { name: 'FlowAgent', img: 'img/agent_flow.png', cls: 'avatar-flow', nameCls: 'name-flow' },
+      green: { name: 'GreenAgent', img: 'img/agent_green.png', cls: 'avatar-green', nameCls: 'name-green' },
+      guide: { name: 'CareGuide', img: 'img/agent_careguide.png', cls: 'avatar-guide', nameCls: 'name-guide' },
+      command: { name: 'CommandAgent', img: 'img/agent_command.png', cls: 'avatar-command', nameCls: 'name-command' },
+    };
+    let selectedBedId = null;
 
     function renderConnection(state) {
       const chip = document.getElementById('connection-chip');
       const source = document.getElementById('source-chip');
       if (!chip || !source || !state) return;
       chip.className = `status-chip ${state.backendConnected ? 'ok' : 'warn'}`;
-      chip.textContent = state.backendConnected ? 'Backend connected' : 'Fallback mode active';
-      source.textContent = `Data: ${state.source}`;
+      chip.textContent = state.backendConnected ? 'Backend connected' : 'Connecting to backend...';
+      source.textContent = `Data: ${state.source || 'backend'}`;
     }
 
     function renderDemoMode(isDemo) {
@@ -438,156 +475,233 @@
     }
     window.toggleDemoMode = toggleDemoMode;
 
-    // BELL SCROLL TO ALERTS
     function scrollToAlerts() {
       const alertsCard = document.getElementById('alerts-list').closest('.card');
       if (!alertsCard) return;
       alertsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      // Flash highlight
       alertsCard.style.transition = 'box-shadow 0.3s';
       alertsCard.style.boxShadow = '0 0 0 2px #ef4444, 0 0 24px rgba(239,68,68,0.4)';
       setTimeout(() => { alertsCard.style.boxShadow = ''; }, 1800);
     }
     window.scrollToAlerts = scrollToAlerts;
 
-    // NAV SCROLL
     window.addEventListener('scroll', () => {
       document.querySelector('.nav').style.background = window.scrollY > 10
         ? 'rgba(5,8,16,0.98)' : 'rgba(5,8,16,0.95)';
     });
 
-    // ===== RENDER PATIENTS =====
-    function renderPatients(patients) {
-      const grid = document.getElementById('patients-grid');
-      const filtered = currentFilter === 'all' ? patients
-        : patients.filter(p => p.status === currentFilter);
-
-      grid.innerHTML = filtered.map(p => {
-        const ews = p.ews;
-        const ec = ewsColor(ews);
-        const sp = getSymptomProfile(p);
-        const rv = getRoleView(p, activeRole);
-        return `
-        <div class="patient-card ${p.status}" onclick="openDashboardPatientDetail(${p.id})">
-          <div class="patient-header">
-            <div>
-              <div class="patient-name">${p.name}</div>
-              <div class="patient-info">Room ${p.room} · ${p.ward} · Age ${p.age}</div>
-            </div>
-            <span class="status-badge badge-${p.status}">${p.status.toUpperCase()}</span>
-          </div>
-          <div class="patient-summary-grid">
-            <div class="patient-summary-pill">
-              <div class="patient-summary-label">Primary Symptom</div>
-              <div class="patient-summary-value" style="color:${sp.levelColor}">${sp.primary}</div>
-            </div>
-            <div class="patient-summary-pill">
-              <div class="patient-summary-label">Risk</div>
-              <div class="patient-summary-value" style="color:${ec}">${ews}/10 · ${sp.level.toUpperCase()}</div>
-            </div>
-            <div class="patient-summary-pill">
-              <div class="patient-summary-label">Role Focus (${activeRole})</div>
-              <div class="patient-summary-value">${rv.focus}</div>
-            </div>
-            <div class="patient-summary-pill">
-              <div class="patient-summary-label">Next Action</div>
-              <div class="patient-summary-value">${rv.action}</div>
-            </div>
-          </div>
-          <div class="patient-detail-hint">Click for full details and SOAP note</div>
-        </div>`;
-      }).join('');
-    }
-
-    function openDashboardPatientDetail(patientId) {
-      const patient = sim.patients.find(p => p.id === patientId);
-      if (!patient) return;
-
-      const sp = getSymptomProfile(patient);
-      const rv = getRoleView(patient, activeRole);
-      const soap = buildSoapMiniNote(patient, activeRole);
-
-      document.getElementById('dash-detail-title').textContent = `${patient.name} · ${patient.ward} ${patient.bed}`;
-      document.getElementById('dash-detail-meta').textContent = `Role view: ${activeRole.toUpperCase()} · Risk ${patient.ews}/10 (${patient.status.toUpperCase()})`;
-
-      document.getElementById('dash-detail-body').innerHTML = `
-        <div class="dash-detail-grid">
-          <div class="dash-detail-card">
-            <h4>Quick Overview</h4>
-            <div class="dash-detail-line"><b>Primary symptom:</b>${escHtml(sp.primary)}</div>
-            <div class="dash-detail-line"><b>Severity:</b><span style="color:${sp.levelColor}">${escHtml(sp.level.toUpperCase())}</span></div>
-            <div class="dash-detail-line"><b>Onset:</b>${escHtml(sp.onset)}</div>
-            <div class="dash-detail-line"><b>Pain/distress:</b>${escHtml(sp.painScore)}/10</div>
-            <div class="dash-detail-line"><b>Mobility:</b>${escHtml(sp.mobility)}</div>
-          </div>
-          <div class="dash-detail-card">
-            <h4>${activeRole.toUpperCase()} Role Briefing</h4>
-            <div class="dash-detail-line"><b>Focus:</b>${escHtml(rv.focus)}</div>
-            <div class="dash-detail-line"><b>Priority:</b>${escHtml(rv.priority)}</div>
-            <div class="dash-detail-line"><b>Action:</b>${escHtml(rv.action)}</div>
-            <div class="dash-detail-line"><b>Summary:</b>${escHtml(rv.summary)}</div>
-          </div>
-          <div class="dash-detail-card">
-            <h4>SOAP Mini-Note</h4>
-            <div class="dash-detail-line"><b>S:</b>${escHtml(soap.s)}</div>
-            <div class="dash-detail-line"><b>O:</b>${escHtml(soap.o)}</div>
-            <div class="dash-detail-line"><b>A:</b>${escHtml(soap.a)}</div>
-            <div class="dash-detail-line"><b>P:</b>${escHtml(soap.p)}</div>
-          </div>
-          <div class="dash-detail-card">
-            <h4>Operational Context</h4>
-            <div class="dash-detail-line"><b>Conditions:</b>${escHtml((patient.conditions || []).join(', ') || 'None listed')}</div>
-            <div class="dash-detail-line"><b>Care notes:</b>${escHtml(patient.notes || 'Observation note pending update')}</div>
-            <div class="dash-detail-line"><b>Pending labs:</b>${escHtml(patient.pendingLabs || 'No urgent labs pending')}</div>
-            <div class="dash-detail-line"><b>Room:</b>${escHtml(patient.room)} · <b>Age:</b>${escHtml(patient.age)}</div>
-          </div>
-        </div>
-      `;
-
-      document.getElementById('dash-detail-modal').classList.add('open');
-    }
-    window.openDashboardPatientDetail = openDashboardPatientDetail;
-
-    function closeDashboardPatientDetail(event) {
-      if (event && event.target && event.target.id && event.target.id !== 'dash-detail-modal') return;
-      document.getElementById('dash-detail-modal').classList.remove('open');
-    }
-    window.closeDashboardPatientDetail = closeDashboardPatientDetail;
-
-    function setViewRole(role, btn) {
-      activeRole = role;
-      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderPatients(sim.patients);
-    }
-    window.setViewRole = setViewRole;
-
-    // ===== RENDER BEDS =====
     function renderBeds(beds) {
       const grid = document.getElementById('beds-grid');
+      if (!grid || !Array.isArray(beds)) return;
       const labels = { available:'FREE', occupied:'OCC', reserved:'RES', critical:'CRIT', icu:'ICU' };
       grid.innerHTML = beds.map(b =>
-        `<div class="bed-cell-full bed-${b.status}" title="Bed ${b.id} — ${b.status}">
-          <div class="bcf-num">${b.id}</div>
-          <div class="bcf-num">${labels[b.status]}</div>
+        `<div class="bed-cell-full bed-${b.status}" onclick="openBedModal(${b.id})" title="${b.code} · ${b.status}${b.patientName ? ` · ${b.patientName}` : ''}">
+          <div class="bcf-num">${b.code}</div>
+          <div class="bcf-label">${labels[b.status] || 'N/A'}</div>
         </div>`).join('');
 
       const avail = beds.filter(b => b.status === 'available').length;
+      const occupied = beds.filter(b => b.status !== 'available').length;
+      const total = beds.length;
+      const occupancy = total ? Math.round((occupied / total) * 100) : 0;
+
       document.getElementById('bed-avail-badge').textContent = `${avail} Available`;
-      document.getElementById('stat-beds').textContent =
-        Math.round((beds.filter(b => b.status !== 'available').length / beds.length) * 100) + '%';
+      document.getElementById('stat-total-beds').textContent = total;
+      document.getElementById('stat-occupied-beds').textContent = occupied;
+      document.getElementById('stat-available-beds').textContent = avail;
+      document.getElementById('stat-occupancy-rate').textContent = `${occupancy}%`;
     }
 
-    // ===== RENDER ALERTS =====
-    function renderAlerts(alerts) {
-      const list = document.getElementById('alerts-list');
-      document.getElementById('alert-count').textContent = alerts.length;
-      document.getElementById('alert-badge').textContent = alerts.length + ' PENDING';
-      if (!alerts.length) {
-        list.innerHTML = '<div class="no-alerts">✅ No pending alerts. All clear.</div>';
+    function openBedModal(bedId) {
+      const bed = sim.beds.find(b => b.id === bedId);
+      if (!bed) return;
+      selectedBedId = bedId;
+      document.getElementById('bed-error').textContent = '';
+      document.getElementById('bed-title').textContent = `Bed ${bed.code}`;
+      document.getElementById('bed-sub').textContent = `${bed.ward}${bed.room ? ` · ${bed.room}` : ''}`;
+
+      let patientPillHTML = `<div class="bed-pill"><div class="bed-pill-label">Current Patient</div><div class="bed-pill-value">${bed.patientName || 'None'}</div></div>`;
+      
+      if (bed.patientId) {
+        const patient = (sim.patients || []).find(p => p.id === bed.patientId);
+        if (patient) {
+          const tooltipContent = `
+            <div class="tooltip-row"><span class="tooltip-label">Ward:</span> ${patient.ward}</div>
+            <div class="tooltip-row"><span class="tooltip-label">Bed:</span> ${patient.bed || 'None'}</div>
+            <div class="tooltip-row"><span class="tooltip-label">EWS:</span> ${patient.ews}</div>
+            <div class="tooltip-row"><span class="tooltip-label">Status:</span> ${patient.status || 'Stable'}</div>
+          `;
+          patientPillHTML = `<div class="bed-pill"><div class="bed-pill-label">Current Patient</div><div class="bed-pill-value hoverable">${bed.patientName}<div class="patient-tooltip">${tooltipContent}</div></div></div>`;
+        }
+      }
+
+      document.getElementById('bed-info-grid').innerHTML = `
+        <div class="bed-pill"><div class="bed-pill-label">Status</div><div class="bed-pill-value">${bed.status.toUpperCase()}</div></div>
+        ${patientPillHTML}
+      `;
+
+      const actions = [];
+      if (bed.status === 'available') {
+        actions.push('<button class="bed-btn warn" onclick="reserveCurrentBed()">Reserve Bed</button>');
+      }
+      if (bed.status === 'reserved') {
+        actions.push('<button class="bed-btn success" onclick="releaseCurrentBed()">Make Vacant</button>');
+      }
+      if (bed.patientId) {
+        actions.push('<button class="bed-btn danger" onclick="vacateCurrentBed()">Vacate Bed</button>');
+      }
+      document.getElementById('bed-actions').innerHTML = actions.join('') || '<span class="status-chip">No direct action</span>';
+
+      const select = document.getElementById('bed-patient-select');
+      const candidates = sim.patients || [];
+
+      select.innerHTML = ['<option value="" selected disabled>Assign to patient...</option>']
+        .concat(candidates.map(p => `<option value="${p.id}">${p.name} | ${p.ward} | Bed ${p.bed || 'None'} | EWS ${p.ews}</option>`))
+        .join('');
+
+      const assignRow = document.getElementById('assign-row');
+      const transferRow = document.getElementById('transfer-row');
+      const transferSelect = document.getElementById('bed-transfer-select');
+      if (bed.patientId) {
+        assignRow.style.display = 'none';
+        transferRow.style.display = 'grid';
+        const targetOptions = (sim.beds || [])
+          .filter(b => b.id !== bed.id)
+          .map(b => {
+            const occupancy = b.patientName ? `Assigned: ${b.patientName}` : 'Vacant';
+            return `<option value="${b.id}">${b.code} | ${b.ward} | ${b.status.toUpperCase()} | ${occupancy}</option>`;
+          });
+        transferSelect.innerHTML = ['<option value="" selected disabled>Transfer to bed...</option>']
+          .concat(targetOptions)
+          .join('');
+      } else {
+        assignRow.style.display = 'grid';
+        transferRow.style.display = 'none';
+        transferSelect.innerHTML = '<option value="" selected disabled>Transfer to bed...</option>';
+      }
+
+      document.getElementById('bed-modal').classList.add('open');
+    }
+    window.openBedModal = openBedModal;
+
+    function closeBedModal(event) {
+      if (event && event.target && event.target.id && event.target.id !== 'bed-modal') return;
+      document.getElementById('bed-modal').classList.remove('open');
+      selectedBedId = null;
+    }
+    window.closeBedModal = closeBedModal;
+
+    async function reserveCurrentBed() {
+      if (!selectedBedId) return;
+      const result = await sim.reserveBed(selectedBedId);
+      if (!result.ok) {
+        document.getElementById('bed-error').textContent = result.error || 'Unable to reserve this bed.';
         return;
       }
-      list.innerHTML = alerts.map(a => `
+      closeBedModal();
+    }
+    window.reserveCurrentBed = reserveCurrentBed;
+
+    async function releaseCurrentBed() {
+      if (!selectedBedId) return;
+      const result = await sim.releaseBed(selectedBedId);
+      if (!result.ok) {
+        document.getElementById('bed-error').textContent = result.error || 'Unable to make bed vacant.';
+        return;
+      }
+      closeBedModal();
+    }
+    window.releaseCurrentBed = releaseCurrentBed;
+
+    async function vacateCurrentBed() {
+      if (!selectedBedId) return;
+      const result = await sim.vacateBed(selectedBedId);
+      if (!result.ok) {
+        document.getElementById('bed-error').textContent = result.error || 'Unable to vacate this bed.';
+        return;
+      }
+      closeBedModal();
+    }
+    window.vacateCurrentBed = vacateCurrentBed;
+
+    async function submitAssignBed() {
+      if (!selectedBedId) return;
+      const patientId = Number(document.getElementById('bed-patient-select').value || 0);
+      if (!patientId) {
+        document.getElementById('bed-error').textContent = 'Select a patient to assign this bed.';
+        return;
+      }
+      const result = await sim.assignBedToPatient(selectedBedId, patientId);
+      if (!result.ok) {
+        document.getElementById('bed-error').textContent = result.error || 'Unable to assign this bed to selected patient.';
+        return;
+      }
+      closeBedModal();
+    }
+    window.submitAssignBed = submitAssignBed;
+
+    async function submitTransferBed() {
+      if (!selectedBedId) return;
+      const targetBedId = Number(document.getElementById('bed-transfer-select').value || 0);
+      if (!targetBedId) {
+        document.getElementById('bed-error').textContent = 'Select a destination bed for transfer.';
+        return;
+      }
+      const result = await sim.transferPatientToBed(selectedBedId, targetBedId);
+      if (!result.ok) {
+        document.getElementById('bed-error').textContent = result.error || 'Unable to transfer patient.';
+        return;
+      }
+      closeBedModal();
+    }
+    window.submitTransferBed = submitTransferBed;
+
+    function renderWardLoad(patients) {
+      const host = document.getElementById('ward-load');
+      if (!host) return;
+      const list = Array.isArray(patients) ? patients : [];
+      const total = list.length;
+      document.getElementById('ward-total-badge').textContent = `${total} Active Patients`;
+
+      if (!total) {
+        host.innerHTML = '<div class="no-alerts" style="padding:1rem;">No ward assignments yet.</div>';
+        return;
+      }
+
+      const counts = {};
+      list.forEach(p => {
+        const key = (p.ward || 'Unassigned').trim();
+        counts[key] = (counts[key] || 0) + 1;
+      });
+
+      const rows = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([ward, count]) => {
+          const pct = Math.max(6, Math.round((count / total) * 100));
+          return `
+            <div class="ward-row">
+              <div class="ward-name">${ward}</div>
+              <div class="ward-bar"><div class="ward-fill" style="width:${pct}%;"></div></div>
+              <div class="ward-meta">${count} pts</div>
+            </div>`;
+        }).join('');
+
+      host.innerHTML = rows;
+    }
+
+    function renderAlerts(alerts) {
+      const list = document.getElementById('alerts-list');
+      const items = Array.isArray(alerts) ? alerts : [];
+      document.getElementById('alert-count').textContent = items.length;
+      document.getElementById('alert-badge').textContent = `${items.length} PENDING`;
+      document.getElementById('stat-pending-actions').textContent = items.length;
+
+      if (!items.length) {
+        list.innerHTML = '<div class="no-alerts">No pending bed actions.</div>';
+        return;
+      }
+
+      list.innerHTML = items.map(a => `
         <div class="alert-card ${a.severity}" id="alert-${a.id}">
           <div class="alert-top">
             <span class="alert-severity sev-${a.severity}">${a.severity.toUpperCase()}</span>
@@ -596,9 +710,6 @@
           <div class="alert-title">${a.title}</div>
           <div class="alert-desc">${a.desc}</div>
           <div class="alert-agent">${a.agent} · ${a.time}</div>
-          <div style="margin-bottom:0.45rem;">
-            <button class="why-btn" onclick="openExplainability('${a.id}')">Why this alert?</button>
-          </div>
           <div class="alert-actions">
             ${a.actions.map(act => `
               <button class="btn ${act.cls}" onclick="handleAction('${act.fn}','${act.arg}','${a.id}')">
@@ -608,13 +719,11 @@
         </div>`).join('');
     }
 
-    // ===== RENDER AGENT FEED =====
     function renderAgentFeed(log) {
       const feed = document.getElementById('agent-feed');
-      const agentMap = {};
-      AGENT_DEFS.forEach(a => { agentMap[a.id] = a; });
-      feed.innerHTML = log.slice(0, 15).map(m => {
-        const ag = agentMap[m.agent] || { name:m.agent, img:'img/agent_command.png', cls:'', nameCls:'' };
+      const list = Array.isArray(log) ? log : [];
+      feed.innerHTML = list.slice(0, 15).map(m => {
+        const ag = AGENT_CARD_MAP[m.agent] || { name: m.agent, img: 'img/agent_command.png', cls: '', nameCls: '' };
         const avatar = ag.img
           ? `<img src="${ag.img}" alt="${ag.name}"/>`
           : (ag.emoji || '');
@@ -630,119 +739,91 @@
       }).join('');
     }
 
-    // ===== RENDER APPROVED ACTIONS =====
     function renderApproved(actions) {
       const log = document.getElementById('actions-log');
-      const resolved = sim.stats.alertsResolved;
-      document.getElementById('stat-resolved').textContent = resolved;
+      const resolved = sim.stats?.alertsResolved || 0;
       document.getElementById('resolved-badge').textContent = resolved + ' Resolved Today';
+      if (!actions || !actions.length) {
+        log.innerHTML = '<div class="approved-empty">No approved actions yet.</div>';
+        return;
+      }
       const newItems = actions.map(a => `
         <div class="action-item">
           <span class="action-check">✓</span>${a.text}
           <span class="action-time">${a.time}</span>
         </div>`).join('');
-      if (newItems) log.innerHTML = newItems + log.innerHTML.slice(0, 600);
+      if (newItems) log.innerHTML = newItems;
     }
 
-    // ===== HANDLE BUTTON ACTIONS =====
-    function handleAction(fn, arg, alertId) {
-      if (sim[fn]) sim[fn](arg);
-      // Remove the alert card
+    async function handleAction(fn, arg, alertId) {
+      const actionFn = sim[fn];
+      if (typeof actionFn !== 'function') return;
+
       const card = document.getElementById('alert-' + alertId);
       if (card) {
-        card.style.transition = 'opacity 0.3s, transform 0.3s';
-        card.style.opacity = '0'; card.style.transform = 'translateX(-20px)';
-        setTimeout(() => { sim.alerts = sim.alerts.filter(a => a.id !== alertId); renderAlerts(sim.alerts); }, 300);
+        card.querySelectorAll('button').forEach(btn => {
+          btn.disabled = true;
+          btn.style.opacity = '0.65';
+          btn.style.cursor = 'not-allowed';
+        });
       }
+
+      let outcome;
+      try {
+        outcome = await actionFn.call(sim, arg);
+      } catch (err) {
+        outcome = { ok: false, error: String(err?.message || err || 'Action failed') };
+      }
+
+      const isFailure = outcome && typeof outcome === 'object' && outcome.ok === false;
+      if (isFailure) {
+        if (card) {
+          card.querySelectorAll('button').forEach(btn => {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+          });
+          let errNode = card.querySelector('.alert-error');
+          if (!errNode) {
+            errNode = document.createElement('div');
+            errNode.className = 'alert-desc alert-error';
+            errNode.style.color = '#fca5a5';
+            errNode.style.marginTop = '0.35rem';
+            card.appendChild(errNode);
+          }
+          errNode.textContent = outcome.error || 'Unable to complete this action.';
+        }
+        return;
+      }
+
+      if (card) {
+        card.style.transition = 'opacity 0.3s, transform 0.3s';
+        card.style.opacity = '0';
+        card.style.transform = 'translateX(-20px)';
+      }
+      setTimeout(() => {
+        sim.alerts = sim.alerts.filter(a => a.id !== alertId);
+        renderAlerts(sim.alerts);
+      }, 300);
     }
     window.handleAction = handleAction;
 
-    function openExplainability(alertId) {
-      const alert = sim.alerts.find(a => a.id === alertId);
-      if (!alert) return;
-      const explain = alert.explain || {
-        trigger: 'Clinical threshold exceeded',
-        drivers: ['Risk score and symptom trajectory'],
-        confidence: 'Moderate',
-        ifIgnored: 'Potential delay in intervention',
-      };
-
-      document.getElementById('explain-title').textContent = alert.title.replace(/[⚠️🚨🫀🌡️🌿]/g, '').trim() || 'Alert Explainability';
-      document.getElementById('explain-sub').textContent = `${alert.room} · ${alert.agent} · ${alert.time}`;
-      document.getElementById('explain-body').innerHTML = `
-        <div class="explain-grid">
-          <div class="explain-card">
-            <h4>Trigger</h4>
-            <div class="explain-line">${escHtml(explain.trigger)}</div>
-            <div class="drivers">${(explain.drivers || []).map(d => `<span class="driver-tag">${escHtml(d)}</span>`).join('')}</div>
-          </div>
-          <div class="explain-card">
-            <h4>Confidence</h4>
-            <div class="explain-line"><b>Model confidence:</b>${escHtml(explain.confidence || 'Moderate')}</div>
-            <div class="explain-line"><b>If ignored:</b>${escHtml(explain.ifIgnored || 'Potential care delay')}</div>
-          </div>
-          <div class="explain-card" style="grid-column:1 / -1;">
-            <h4>Current Recommendation</h4>
-            <div class="explain-line">${escHtml(alert.desc)}</div>
-          </div>
-        </div>
-      `;
-
-      document.getElementById('explain-modal').classList.add('open');
-    }
-    window.openExplainability = openExplainability;
-
-    function closeExplainability(event) {
-      if (event && event.target && event.target.id && event.target.id !== 'explain-modal') return;
-      document.getElementById('explain-modal').classList.remove('open');
-    }
-    window.closeExplainability = closeExplainability;
-
-    // ===== FILTER PATIENTS =====
-    function filterPatients(filter, btn) {
-      currentFilter = filter;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderPatients(sim.patients);
-    }
-    window.filterPatients = filterPatients;
-
-    // Expose AGENT_DEFS globally (needed for feed render)
-    window.AGENT_DEFS = [
-      { id:"sentinel", name:"SentinelAgent", img:"img/agent_sentinel.png", cls:"avatar-sentinel", nameCls:"name-sentinel" },
-      { id:"flow",     name:"FlowAgent",     img:"img/agent_flow.png",     cls:"avatar-flow",     nameCls:"name-flow" },
-      { id:"green",    name:"GreenAgent",    img:"img/agent_green.png",    cls:"avatar-green",    nameCls:"name-green" },
-      { id:"guide",    name:"CareGuide",     img:"img/agent_careguide.png",cls:"avatar-guide",    nameCls:"name-guide" },
-      { id:"command",  name:"CommandAgent",  img:"img/agent_command.png",  cls:"avatar-command",  nameCls:"name-command" },
-    ];
-
-    // Prevent duplicate alerts: mark pre-seeded critical patient IDs
-    const seededPatientIds = new Set(['5','7']);
-    const _origTrigger = sim.triggerPatientAlert.bind(sim);
-    sim.triggerPatientAlert = function(p) {
-      // Skip if this patient already has an alert in the list
-      const alreadyAlerted = sim.alerts.some(a => a.id !== 'a_' + Date.now() && a.title.includes(p.name));
-      if (!alreadyAlerted) _origTrigger(p);
-    };
-
-    // ===== WIRE UP LIVE OBSERVATION EVENTS =====
-    sim.on('vitals', (patients) => { renderPatients(patients); });
+    sim.on('vitals', (patients) => { renderWardLoad(patients); });
     sim.on('beds',   (beds)     => { renderBeds(beds); });
     sim.on('alerts', (alerts)   => { renderAlerts(alerts); });
-    sim.on('agentLog',(log)     => { renderAgentFeed(log); });
-    sim.on('approved',(acts)    => { renderApproved(acts); });
+    sim.on('agentLog', (log)    => { renderAgentFeed(log); });
+    sim.on('approved', (acts)   => { renderApproved(acts); });
     sim.on('connection', (state) => { renderConnection(state); });
     sim.on('demoMode', (isDemo) => { renderDemoMode(isDemo); });
 
-    // Initial render
-    renderPatients(sim.patients);
     renderBeds(sim.beds);
+    renderWardLoad(sim.patients);
     renderAlerts(sim.alerts);
     renderAgentFeed(sim.agentLog);
+    renderApproved(sim.approvedActions || []);
     renderConnection(sim.getConnectionState());
     renderDemoMode(sim.getDemoMode());
 
-    // Start live observation updates
     sim.start();
   </script>
 </body>

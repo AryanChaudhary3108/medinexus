@@ -18,7 +18,6 @@ The project includes:
   - CommandAgent (orchestration)
 - Live-updating hospital vitals and alerts
 - Bed occupancy visualization and action approval flows
-- Energy saving controls and impact stats
 - Multilingual CareGuide support (English, Hindi, Tamil, Telugu)
 - RAG backend for hospital-knowledge grounded responses
 
@@ -29,7 +28,6 @@ medinexus-main/
   index.html
   dashboard.html
   patients.html
-  energy.html
   companion.html
   css/
     style.css
@@ -231,7 +229,6 @@ For production/security best practice:
 - `index.html`: Landing page and system overview
 - `dashboard.html`: Command center with alerts, vitals, beds, and action logs
 - `patients.html`: Detailed patient monitor cards with EWS and trends
-- `energy.html`: GreenAgent energy monitoring and eco-mode controls
 - `companion.html`: CareGuide conversational assistant UI
 
 ## Simulation Engine

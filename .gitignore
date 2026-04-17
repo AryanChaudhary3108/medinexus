@@ -17,6 +17,7 @@ qdrant_db/
 
 # Runtime SQLite data files
 backend/data/*.db
+backend/*.db
 
 # Environment variables
 .env
