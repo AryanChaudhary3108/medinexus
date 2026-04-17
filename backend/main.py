@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from qdrant_client import QdrantClient
 from fastembed import TextEmbedding
@@ -36,6 +37,7 @@ from patient_store import (
 load_dotenv(dotenv_path=Path(__file__).with_name(".env"))
 
 app = FastAPI(title="MediNexus CareGuide Clinical API")
+FRONTEND_ROOT = Path(__file__).resolve().parent.parent
 
 app.add_middleware(
     CORSMiddleware,
@@ -490,3 +492,11 @@ async def update_patient_record(patient_id: int, req: PatientUpdateRequest):
         raise HTTPException(status_code=404, detail="Patient not found")
     updated["risk_assessment"] = assessment
     return updated
+
+
+@app.get("/", include_in_schema=False)
+async def serve_index():
+    return FileResponse(FRONTEND_ROOT / "index.html")
+
+
+app.mount("/", StaticFiles(directory=FRONTEND_ROOT, html=True), name="frontend")

@@ -566,7 +566,11 @@
   <script src="js/simulation.js"></script>
   <script>
     const sim = new MediNexus();
-    const apiBase = window.MEDINEXUS_API_BASE || 'http://localhost:8000';
+    const apiBase = window.MEDINEXUS_API_BASE || (
+      ['localhost', '127.0.0.1'].includes(window.location.hostname)
+        ? 'http://localhost:8000'
+        : window.location.origin
+    );
     let ward = 'all';
     let activeRole = 'nurse';
     let editingPatientId = null;

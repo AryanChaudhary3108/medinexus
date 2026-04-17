@@ -1,7 +1,11 @@
 // ===== MEDINEXUS OPERATIONAL ENGINE =====
 // Real-time hospital observation data + AI agent coordination
 
-const API_BASE = window.MEDINEXUS_API_BASE || 'http://localhost:8000';
+const API_BASE = window.MEDINEXUS_API_BASE || (
+  ['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'http://localhost:8000'
+    : window.location.origin
+);
 const AGENT_DEFS = [
   { id:"sentinel", name:"SentinelAgent", img:"img/agent_sentinel.png", cls:"avatar-sentinel", nameCls:"name-sentinel" },
   { id:"flow",     name:"FlowAgent",     img:"img/agent_flow.png",     cls:"avatar-flow",     nameCls:"name-flow" },
