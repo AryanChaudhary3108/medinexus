@@ -1,0 +1,234 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Patient Monitor | MediNexus</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .patients-wrap { padding: 1.5rem; }
+    .patients-big-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.25rem; margin-top: 1.25rem;
+    }
+    .patient-detail-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden;
+      transition: all 0.3s ease; cursor: pointer;
+    }
+    .patient-detail-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 10px 40px rgba(14,165,233,0.1);
+    }
+    .patient-detail-card.critical { border-color: rgba(240, 67, 67, 0.4); }
+    .patient-detail-card.warning { border-color: rgba(245,158,11,0.3); }
+    .pdc-header {
+      padding: 1.1rem 1.25rem;
+      display: flex; align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .pdc-header.critical { background: rgba(239,68,68,0.06); }
+    .pdc-header.warning  { background: rgba(245,158,11,0.04); }
+    .pdc-header.stable   { background: rgba(16,185,129,0.04); }
+    .pdc-name { font-weight: 700; font-size: 1rem; }
+    .pdc-info { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .pdc-body { padding: 1.1rem 1.25rem; }
+    .vitals-row {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 0.6rem; margin-bottom: 0.75rem;
+    }
+    .vital-box {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.6rem 0.5rem;
+      text-align: center;
+    }
+    .vb-label { font-size: 0.58rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .vb-val { font-family: var(--mono); font-weight: 700; font-size: 1.05rem; margin-top: 2px; }
+    .vb-unit { font-size: 0.58rem; color: var(--muted); }
+    .ews-section { margin-bottom: 0.75rem; }
+    .ews-row { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.3rem; }
+    .ews-bg { flex:1; height:6px; background:rgba(255,255,255,0.07); border-radius:3px; overflow:hidden; }
+    .ews-fill { height:100%; border-radius:3px; transition: width 0.8s ease; }
+    .spark-section { margin-top: 0.6rem; }
+    .spark-row { display:flex; align-items:center; gap:0.5rem; margin-bottom:3px; }
+    .spark-lbl { font-size:0.62rem; color:var(--muted); width:28px; text-align:right; font-family:var(--mono); }
+    .conds-row {
+      display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem;
+    }
+    .cond-tag {
+      padding: 2px 8px; border-radius: 4px;
+      background: rgba(14,165,233,0.1);
+      border: 1px solid rgba(14,165,233,0.2);
+      font-size: 0.68rem; color: var(--primary);
+    }
+    .search-top {
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .search-inp {
+      flex: 1; max-width: 300px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.5rem 1rem;
+      color: var(--text); font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.88rem; outline: none; transition: border 0.2s;
+    }
+    .search-inp:focus { border-color: var(--primary); }
+    .ward-filter { display: flex; gap: 0.35rem; }
+    .wf-btn {
+      padding: 0.4rem 0.85rem; border-radius: 6px; border: 1px solid var(--border);
+      background: none; font-family: 'Space Grotesk',sans-serif;
+      color: var(--muted); font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; letter-spacing: 0.5px;
+    }
+    .wf-btn.active, .wf-btn:hover { background:var(--primary-g); color:var(--primary); border-color:rgba(14,165,233,0.4); }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-brand">
+      <div class="nav-logo-icon"><img src="img/logo.png" alt="MediNexus" style="width:32px;height:32px;object-fit:contain;"/></div>
+      <div><div class="nav-logo-text">MediNexus</div><div class="nav-tagline">Patient Monitor</div></div>
+    </div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="dashboard.html">Command Center</a></li>
+      <li><a href="patients.html" class="active">Patients</a></li>
+      <li><a href="energy.html">Energy</a></li>
+      <li><a href="companion.html">CareGuide</a></li>
+    </ul>
+    <div class="nav-right">
+      <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+      <div class="nav-time" id="clock">--:--:--</div>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">🛡️ Patient Monitoring — SentinelAgent
+          <span class="card-badge cb-red" id="critical-count" style="font-size:0.7rem;">2 CRITICAL</span>
+        </div>
+        <div class="page-sub">Real-time vitals for all 12 monitored patients · EWS updated every 2.5 seconds</div>
+      </div>
+    </div>
+
+    <div class="patients-wrap">
+      <div class="search-top">
+        <input class="search-inp" id="search" placeholder="🔍  Search patient name..." oninput="renderAll()"/>
+        <div class="ward-filter" id="ward-filter">
+          <button class="wf-btn active" onclick="setWard('all',this)">All Wards</button>
+          <button class="wf-btn" onclick="setWard('ICU',this)">ICU</button>
+          <button class="wf-btn" onclick="setWard('Cardiac',this)">Cardiac</button>
+          <button class="wf-btn" onclick="setWard('General',this)">General</button>
+          <button class="wf-btn" onclick="setWard('Geriatric',this)">Geriatric</button>
+        </div>
+      </div>
+      <div class="patients-big-grid" id="big-grid"></div>
+    </div>
+  </div>
+
+  <script src="js/simulation.js"></script>
+  <script>
+    const sim = new MediNexus();
+    let ward = 'all';
+
+    function setWard(w, btn) {
+      ward = w;
+      document.querySelectorAll('.wf-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAll();
+    }
+    window.setWard = setWard;
+
+    function renderAll() {
+      const q = document.getElementById('search').value.toLowerCase();
+      const patients = sim.patients.filter(p => {
+        const matchWard = ward === 'all' || p.ward === ward;
+        const matchQ = p.name.toLowerCase().includes(q) || p.room.toLowerCase().includes(q);
+        return matchWard && matchQ;
+      });
+      const critical = sim.patients.filter(p => p.status === 'critical').length;
+      document.getElementById('critical-count').textContent = critical + ' CRITICAL';
+
+      document.getElementById('big-grid').innerHTML = patients.map(p => {
+        const ec = ewsColor(p.ews);
+        const statusIcons = { stable:'🟢', warning:'🟡', critical:'🔴' };
+        return `
+        <div class="patient-detail-card ${p.status}">
+          <div class="pdc-header ${p.status}">
+            <div>
+              <div class="pdc-name">${statusIcons[p.status]} ${p.name}</div>
+              <div class="pdc-info">Room ${p.room} · ${p.ward} Ward · Age ${p.age} · Bed ${p.bed}</div>
+            </div>
+            <span class="status-badge badge-${p.status}">${p.status.toUpperCase()}</span>
+          </div>
+          <div class="pdc-body">
+            <div class="vitals-row">
+              <div class="vital-box">
+                <div class="vb-label">Heart Rate</div>
+                <div class="vb-val" style="color:${vitalColor('hr',p.vitals.hr)}">${p.vitals.hr}</div>
+                <div class="vb-unit">bpm</div>
+              </div>
+              <div class="vital-box">
+                <div class="vb-label">SpO2</div>
+                <div class="vb-val" style="color:${vitalColor('spo2',p.vitals.spo2)}">${p.vitals.spo2}%</div>
+                <div class="vb-unit">oxygen</div>
+              </div>
+              <div class="vital-box">
+                <div class="vb-label">Blood Pressure</div>
+                <div class="vb-val" style="color:${vitalColor('sbp',p.vitals.sbp)};font-size:0.9rem;">${p.vitals.sbp}/${p.vitals.dbp}</div>
+                <div class="vb-unit">mmHg</div>
+              </div>
+              <div class="vital-box">
+                <div class="vb-label">Temperature</div>
+                <div class="vb-val" style="color:${vitalColor('temp',p.vitals.temp)}">${p.vitals.temp}</div>
+                <div class="vb-unit">°C</div>
+              </div>
+              <div class="vital-box">
+                <div class="vb-label">Resp. Rate</div>
+                <div class="vb-val" style="color:${vitalColor('rr',p.vitals.rr)}">${p.vitals.rr}</div>
+                <div class="vb-unit">/min</div>
+              </div>
+              <div class="vital-box">
+                <div class="vb-label">EWS Score</div>
+                <div class="vb-val" style="color:${ec}">${p.ews}/10</div>
+                <div class="vb-unit">${p.ews >= 7 ? 'URGENT' : p.ews >= 4 ? 'OBSERVE' : 'NORMAL'}</div>
+              </div>
+            </div>
+            <div class="ews-section">
+              <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">EWS Progress</div>
+              <div class="ews-row">
+                <div class="ews-bg">
+                  <div class="ews-fill" style="width:${p.ews*10}%;background:${ec};"></div>
+                </div>
+                <span style="font-family:var(--mono);font-size:0.78rem;color:${ec};min-width:40px;">${p.ews}/10</span>
+              </div>
+            </div>
+            <div class="spark-section">
+              <div class="spark-row">
+                <span class="spark-lbl">HR</span>
+                ${makeSpark(p.history.hr, vitalColor('hr', p.vitals.hr), 30)}
+              </div>
+              <div class="spark-row">
+                <span class="spark-lbl">SpO₂</span>
+                ${makeSpark(p.history.spo2, vitalColor('spo2', p.vitals.spo2), 30)}
+              </div>
+            </div>
+            <div class="conds-row">
+              ${p.conditions.map(c => `<span class="cond-tag">${c}</span>`).join('')}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    sim.on('vitals', () => renderAll());
+    renderAll();
+    sim.start();
+  </script>
+</body>
+</html>
+

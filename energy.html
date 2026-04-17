@@ -1,0 +1,305 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Energy Dashboard | MediNexus GreenAgent</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .energy-wrap { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+    .energy-top-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; }
+    .energy-top-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.5rem;
+      display: flex; flex-direction: column; gap: 0.4rem;
+      transition: all 0.3s;
+    }
+    .energy-top-card:hover { border-color: var(--green); box-shadow: 0 8px 30px rgba(16,185,129,0.1); }
+    .etc-icon { font-size: 2rem; margin-bottom: 0.25rem; }
+    .etc-value { font-family: var(--mono); font-size: 2rem; font-weight: 700; line-height: 1; }
+    .etc-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; }
+    .etc-trend { font-size: 0.78rem; margin-top: 0.25rem; }
+    .trend-up { color: var(--red); }
+    .trend-down { color: var(--green); }
+    .energy-main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+    .zone-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; padding: 1.25rem; }
+    .zone-card {
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.25rem; text-align: center;
+      transition: all 0.3s;
+    }
+    .zone-card:hover { border-color: var(--green); }
+    .zone-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .zone-gauge {
+      width: 90px; height: 90px; margin: 0 auto 0.75rem;
+      position: relative;
+    }
+    .zone-gauge svg { width: 100%; height: 100%; }
+    .gauge-bg { fill:none; stroke:rgba(255,255,255,0.07); stroke-width:8; }
+    .gauge-fill { fill:none; stroke-width:8; stroke-linecap:round; transition: stroke-dashoffset 1s ease; }
+    .gauge-center { position:absolute; top:50%;left:50%; transform:translate(-50%,-50%); text-align:center; }
+    .gauge-pct { font-family:var(--mono); font-size:1.1rem; font-weight:700; }
+    .gauge-unit { font-size:0.6rem; color:var(--muted); }
+    .zone-status { display:inline-flex; align-items:center; gap:0.4rem;
+      padding:3px 10px; border-radius:50px; font-size:0.68rem; font-weight:700; margin-top:0.25rem; }
+    .eco-active { background:rgba(16,185,129,0.15); color:var(--green); border:1px solid rgba(16,185,129,0.3); }
+    .normal-mode { background:rgba(14,165,233,0.15); color:var(--primary); border:1px solid rgba(14,165,233,0.3); }
+    .eco-btn {
+      margin-top: 0.75rem; padding: 0.4rem 0.9rem;
+      border-radius: 6px; border: 1px solid var(--border);
+      background: none; color: var(--muted); cursor: pointer;
+      font-family:'Space Grotesk',sans-serif; font-size:0.75rem; font-weight:600;
+      transition: all 0.2s;
+    }
+    .eco-btn:hover, .eco-btn.eco-on { background:rgba(16,185,129,0.15); color:var(--green); border-color:rgba(16,185,129,0.4); }
+    .savings-card { padding: 1.25rem; }
+    .savings-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .savings-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem;
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px;
+    }
+    .savings-item-left { display: flex; align-items: center; gap: 0.75rem; }
+    .savings-icon { font-size: 1.2rem; }
+    .savings-name { font-size: 0.88rem; font-weight: 600; }
+    .savings-mode { font-size: 0.68rem; color: var(--muted); }
+    .savings-val { font-family:var(--mono); font-size:0.95rem; font-weight:700; color:var(--green); }
+    .history-bars { padding: 1.25rem; }
+    .bar-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; }
+    .bar-hour { font-family:var(--mono); font-size:0.68rem; color:var(--muted); width:38px; text-align:right; }
+    .bar-bg { flex:1; height:20px; background:rgba(255,255,255,0.04); border-radius:4px; overflow:hidden; }
+    .bar-fill { height:100%; border-radius:4px; transition: width 1s ease; display:flex; align-items:center; justify-content:flex-end; padding-right:6px; }
+    .bar-fill span { font-size:0.62rem; color:white; font-family:var(--mono); font-weight:600; }
+    .tip-box {
+      background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 10px; padding: 1rem 1.25rem; margin: 1.25rem;
+      display: flex; gap: 0.75rem; align-items: flex-start;
+    }
+    .tip-icon { font-size: 1.2rem; }
+    .tip-text { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+    .tip-text strong { color: var(--green); }
+    @media (max-width:900px) { .energy-main-grid { grid-template-columns:1fr; } .energy-top-grid { grid-template-columns:repeat(2,1fr); } .zone-grid { grid-template-columns:repeat(2,1fr); } }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-brand">
+      <div class="nav-logo-icon"><img src="img/logo.png" alt="MediNexus" style="width:32px;height:32px;object-fit:contain;"/></div>
+      <div><div class="nav-logo-text">MediNexus</div><div class="nav-tagline">GreenAgent — Energy</div></div>
+    </div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="dashboard.html">Command Center</a></li>
+      <li><a href="patients.html">Patients</a></li>
+      <li><a href="energy.html" class="active">Energy</a></li>
+      <li><a href="companion.html">CareGuide</a></li>
+    </ul>
+    <div class="nav-right">
+      <div class="live-badge"><div class="live-dot"></div>OPTIMIZING</div>
+      <div class="nav-time" id="clock">--:--:--</div>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">🌿 GreenAgent — Energy Optimization Dashboard</div>
+        <div class="page-sub">Real-time hospital energy management · Sustainability tracking · Cost analysis</div>
+      </div>
+      <button class="btn btn-approve" onclick="activateGlobalEco()" id="global-eco-btn">
+        ⚡ ACTIVATE FULL ECO MODE
+      </button>
+    </div>
+
+    <div class="energy-wrap">
+      <!-- TOP STATS -->
+      <div class="energy-top-grid">
+        <div class="energy-top-card">
+          <div class="etc-icon">⚡</div>
+          <div class="etc-value" id="total-kw" style="color:var(--primary);">284</div>
+          <div class="etc-label">Current Load (kW)</div>
+          <div class="etc-trend trend-down" id="kw-trend">▼ Down from 306 kW peak</div>
+        </div>
+        <div class="energy-top-card">
+          <div class="etc-icon">💚</div>
+          <div class="etc-value" id="saved-kw" style="color:var(--green);">63</div>
+          <div class="etc-label">Energy Saved (kW)</div>
+          <div class="etc-trend trend-down">▼ This shift</div>
+        </div>
+        <div class="energy-top-card">
+          <div class="etc-icon">₹</div>
+          <div class="etc-value" id="saved-cost" style="color:var(--amber);">12.4K</div>
+          <div class="etc-label">Cost Saved (₹)</div>
+          <div class="etc-trend trend-down">▼ Today</div>
+        </div>
+        <div class="energy-top-card">
+          <div class="etc-icon">🌱</div>
+          <div class="etc-value" id="co2-saved" style="color:var(--green);">38</div>
+          <div class="etc-label">CO₂ Avoided (kg)</div>
+          <div class="etc-trend trend-down">▼ This shift</div>
+        </div>
+      </div>
+
+      <!-- MAIN GRID -->
+      <div class="energy-main-grid">
+        <!-- Zone Controls -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">🏗️</span> Zone Energy Management</div>
+            <div class="card-badge cb-green" id="eco-zones-count">3 Zones Eco-Active</div>
+          </div>
+          <div class="zone-grid" id="zone-grid">
+            <!-- Injected by JS -->
+          </div>
+          <div class="tip-box">
+            <div class="tip-icon">💡</div>
+            <div class="tip-text"><strong>GreenAgent insight:</strong> Activating eco-mode in Wing D and Corridor B could save an additional <strong>₹3,800/hr</strong> with zero impact on patient care zones.</div>
+          </div>
+        </div>
+
+        <!-- Savings Breakdown + History -->
+        <div style="display:flex;flex-direction:column;gap:1rem;">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="icon">📊</span> Savings Breakdown</div>
+            </div>
+            <div class="savings-card">
+              <div class="savings-list" id="savings-list">
+                <!-- Injected -->
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="icon">📈</span> Hourly Consumption</div>
+            </div>
+            <div class="history-bars" id="history-bars">
+              <!-- Injected -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/simulation.js"></script>
+  <script>
+    const sim = new MediNexus();
+
+    const ZONES = [
+      { name:'Wing A — General', icon:'🏥', kw:82, eco:true,  patients:true },
+      { name:'Wing B — Cardiac', icon:'🫀', kw:68, eco:false, patients:true },
+      { name:'Wing C — ICU',     icon:'🆘', kw:95, eco:false, patients:true },
+      { name:'Corridors',        icon:'🚶', kw:28, eco:true,  patients:false },
+      { name:'Admin Block',      icon:'🏢', kw:15, eco:true,  patients:false },
+      { name:'Canteen & Labs',   icon:'🍽️', kw:22, eco:false, patients:false },
+    ];
+    let ecoStates = ZONES.map(z => z.eco);
+
+    const SAVINGS_ITEMS = [
+      { icon:'❄️', name:'HVAC System',        mode:'Smart scheduling', saved:'₹5,200' },
+      { icon:'💡', name:'Lighting (Corridors)',mode:'Motion-based',     saved:'₹3,100' },
+      { icon:'🔌', name:'Non-critical Equip.',mode:'Standby mode',     saved:'₹2,400' },
+      { icon:'☀️', name:'Solar Roof',          mode:'12.4 kWh generated', saved:'₹1,700' },
+    ];
+
+    const HOURS = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','Now'];
+    const KW_DATA = [310, 295, 288, 272, 264, 270, 260, 258, 284];
+
+    function renderZones() {
+      const r = 36; const circ = 2 * Math.PI * r;
+      let ecoCount = 0;
+      document.getElementById('zone-grid').innerHTML = ZONES.map((z, i) => {
+        const pct = ecoStates[i] ? (30 + Math.random()*15 | 0) : (60 + Math.random()*25 | 0);
+        const color = ecoStates[i] ? '#10b981' : '#0ea5e9';
+        const dashOff = circ * (1 - pct/100);
+        if (ecoStates[i]) ecoCount++;
+        return `
+        <div class="zone-card">
+          <div class="zone-name">${z.icon} ${z.name.split(' — ')[0]}</div>
+          <div class="zone-gauge">
+            <svg viewBox="0 0 80 80">
+              <circle class="gauge-bg" cx="40" cy="40" r="${r}" stroke-dasharray="${circ}" transform="rotate(-90 40 40)"/>
+              <circle class="gauge-fill" cx="40" cy="40" r="${r}" stroke="${color}"
+                stroke-dasharray="${circ}" stroke-dashoffset="${dashOff}"
+                transform="rotate(-90 40 40)"/>
+            </svg>
+            <div class="gauge-center">
+              <div class="gauge-pct" style="color:${color};">${pct}%</div>
+              <div class="gauge-unit">${z.kw - (ecoStates[i] ? Math.round(z.kw*0.2) : 0)}kW</div>
+            </div>
+          </div>
+          <span class="zone-status ${ecoStates[i] ? 'eco-active' : 'normal-mode'}">
+            ${ecoStates[i] ? '🌿 ECO MODE' : '⚡ NORMAL'}
+          </span>
+          ${!z.patients ? `<br/><button class="eco-btn ${ecoStates[i]?'eco-on':''}" onclick="toggleEco(${i},this)">
+            ${ecoStates[i] ? '✓ ECO ON' : 'Enable Eco'}
+          </button>` : ''}
+        </div>`;
+      }).join('');
+      document.getElementById('eco-zones-count').textContent = ecoCount + ' Zones Eco-Active';
+    }
+
+    function renderSavings() {
+      document.getElementById('savings-list').innerHTML = SAVINGS_ITEMS.map(s => `
+        <div class="savings-item">
+          <div class="savings-item-left">
+            <span class="savings-icon">${s.icon}</span>
+            <div>
+              <div class="savings-name">${s.name}</div>
+              <div class="savings-mode">${s.mode}</div>
+            </div>
+          </div>
+          <div class="savings-val">${s.saved}</div>
+        </div>`).join('');
+    }
+
+    function renderHistory() {
+      const colors = KW_DATA.map(k => k > 290 ? 'var(--amber)' : k > 270 ? 'var(--primary)' : 'var(--green)');
+      const max = Math.max(...KW_DATA);
+      document.getElementById('history-bars').innerHTML = HOURS.map((h, i) => {
+        const pct = (KW_DATA[i] / max) * 100;
+        return `
+        <div class="bar-row">
+          <span class="bar-hour">${h}</span>
+          <div class="bar-bg">
+            <div class="bar-fill" style="width:${pct}%;background:${colors[i]};">
+              <span>${KW_DATA[i]} kW</span>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function toggleEco(idx, btn) {
+      ecoStates[idx] = !ecoStates[idx];
+      sim.energyData.savedKw += ecoStates[idx] ? 5 : -5;
+      renderZones(); updateTopStats();
+    }
+    window.toggleEco = toggleEco;
+
+    function activateGlobalEco() {
+      ecoStates = ZONES.map((z, i) => !z.patients ? true : ecoStates[i]);
+      sim.energyData.savedKw += 12;
+      sim.energyData.savedCost += 8000;
+      const btn = document.getElementById('global-eco-btn');
+      btn.textContent = '✅ ECO MODE ACTIVE';
+      btn.style.background = 'linear-gradient(135deg,#059669,#10b981)';
+      renderZones(); updateTopStats();
+    }
+    window.activateGlobalEco = activateGlobalEco;
+
+    function updateTopStats() {
+      const ed = sim.energyData;
+      document.getElementById('total-kw').textContent = ed.totalKw || 284;
+      document.getElementById('saved-kw').textContent = ed.savedKw || 63;
+      document.getElementById('saved-cost').textContent = ((ed.savedCost || 12400) / 1000).toFixed(1) + 'K';
+      document.getElementById('co2-saved').textContent = Math.round((ed.savedKw || 63) * 0.6);
+    }
+
+    renderZones();
+    renderSavings();
+    renderHistory();
+    updateTopStats();
+  </script>
+</body>
+</html>
+

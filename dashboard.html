@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Command Center | MediNexus</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .dashboard-wrap { padding-top: var(--nav-h); }
+    .patients-grid-section { padding: 0; }
+    .section-tabs {
+      display: flex; gap: 0.25rem;
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab-btn {
+      padding: 0.4rem 1.1rem; border-radius: 6px; border: none;
+      font-family: 'Space Grotesk', sans-serif; font-size: 0.8rem;
+      font-weight: 600; cursor: pointer; transition: all 0.2s;
+      background: none; color: var(--muted); letter-spacing: 0.5px;
+    }
+    .tab-btn.active, .tab-btn:hover {
+      background: var(--primary-g); color: var(--primary);
+    }
+    /* Beds grid full */
+    .beds-full { display: grid; grid-template-columns: repeat(12,1fr); gap: 5px; padding: 1rem; }
+    .bed-cell-full {
+      aspect-ratio: 1.2; border-radius: 5px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      font-size: 0.55rem; font-weight: 600;
+      font-family: var(--mono); cursor: default;
+      position: relative; transition: all 0.3s;
+    }
+    .bed-cell-full:hover { transform: scale(1.1); z-index: 1; }
+    .bcf-num { font-size: 0.62rem; margin-bottom: 2px; }
+    .bcf-icon { font-size: 0.7rem; }
+    /* Right panel */
+    .right-panel { display: flex; flex-direction: column; gap: 1rem; }
+    .no-alerts {
+      text-align: center; padding: 2rem;
+      color: var(--muted); font-size: 0.85rem;
+    }
+    /* Alert list scrollable, cards fully visible */
+    .alerts-list { max-height: 480px; overflow-y: auto; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
+    .alert-card { overflow: visible !important; }
+    .alert-title { font-size: 0.88rem; font-weight: 700; margin: 0.35rem 0; line-height: 1.4; white-space: normal; }
+    .alert-desc  { font-size: 0.77rem; color: var(--muted); line-height: 1.5; white-space: normal; margin-bottom: 0.5rem; }
+    /* Stat icon images */
+    .stat-icon img { width: 22px; height: 22px; object-fit: contain; }
+    /* Card title agent images */
+    .card-title img { width: 20px; height: 20px; object-fit: contain; border-radius: 4px; }
+    /* Agent feed images */
+    .agent-avatar img { width: 100%; height: 100%; object-fit: contain; border-radius: 6px; }
+    .ai-thinking {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem; color: var(--muted);
+      font-family: var(--mono);
+    }
+    .thinking-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--primary);
+      animation: thinkPulse 1.4s ease-in-out infinite;
+    }
+    .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+    .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes thinkPulse { 0%,80%,100% { transform:scale(0.8); opacity:0.4; } 40% { transform:scale(1.2); opacity:1; } }
+    .approved-empty { text-align:center; padding: 1rem; font-size: 0.78rem; color: var(--muted); }
+    .split-layout {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1rem; padding: 1rem;
+    }
+    @media (max-width:900px) { .split-layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-brand">
+      <div class="nav-logo-icon"><img src="img/logo.png" alt="MediNexus" style="width:32px;height:32px;object-fit:contain;"/></div>
+      <div>
+        <div class="nav-logo-text">MediNexus</div>
+        <div class="nav-tagline">Hospital Command Center</div>
+      </div>
+    </div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="dashboard.html" class="active">Command Center</a></li>
+      <li><a href="patients.html">Patients</a></li>
+      <li><a href="energy.html">Energy</a></li>
+      <li><a href="companion.html">CareGuide</a></li>
+    </ul>
+    <div class="nav-right">
+      <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+      <button class="nav-alert-btn" title="Critical Alerts" onclick="scrollToAlerts()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="nav-alert-count" id="alert-count">3</span>
+      </button>
+      <div class="nav-time" id="clock">--:--:--</div>
+    </div>
+  </nav>
+
+  <div class="dashboard-wrap main">
+    <!-- STATS BAR -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-icon blue"><img src="img/agent_careguide.png" alt="patients"/></div>
+        <div class="stat-info">
+          <div class="stat-value blue" id="stat-patients">127</div>
+          <div class="stat-label">Total Patients</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red"><img src="img/agent_sentinel.png" alt="alerts"/></div>
+        <div class="stat-info">
+          <div class="stat-value red pulse" id="stat-critical">3</div>
+          <div class="stat-label">Critical Alerts</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon amber"><img src="img/agent_flow.png" alt="beds"/></div>
+        <div class="stat-info">
+          <div class="stat-value amber" id="stat-beds">87%</div>
+          <div class="stat-label">Bed Occupancy</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><img src="img/agent_green.png" alt="energy"/></div>
+        <div class="stat-info">
+          <div class="stat-value green" id="stat-energy">22%</div>
+          <div class="stat-label">Energy Saved</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><img src="img/agent_command.png" alt="resolved"/></div>
+        <div class="stat-info">
+          <div class="stat-value" id="stat-resolved">14</div>
+          <div class="stat-label">Alerts Resolved</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN LAYOUT -->
+    <div class="dashboard-layout" style="align-items:start;">
+
+      <!-- LEFT: Patient Grid + Bed Map -->
+      <div>
+        <!-- Patient Vitals -->
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-header">
+            <div class="card-title"><img src="img/agent_sentinel.png" alt="sentinel"/> Live Patient Vitals — SentinelAgent</div>
+            <div class="section-tabs" style="padding:0;border:none;">
+              <button class="tab-btn active" onclick="filterPatients('all',this)">All</button>
+              <button class="tab-btn" onclick="filterPatients('critical',this)">Critical</button>
+              <button class="tab-btn" onclick="filterPatients('warning',this)">Warning</button>
+              <button class="tab-btn" onclick="filterPatients('stable',this)">Stable</button>
+            </div>
+          </div>
+          <div class="patients-grid patients-grid-section" id="patients-grid">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- Bed Map -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><img src="img/agent_flow.png" alt="flow"/> Bed Management — FlowAgent</div>
+            <div class="card-badge cb-blue" id="bed-avail-badge">8 Available</div>
+          </div>
+          <div id="beds-grid" class="beds-full"></div>
+          <div class="beds-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:rgba(16,185,129,0.6);"></div>Available</div>
+            <div class="legend-item"><div class="legend-dot" style="background:rgba(14,165,233,0.6);"></div>Occupied</div>
+            <div class="legend-item"><div class="legend-dot" style="background:rgba(245,158,11,0.6);"></div>Reserved</div>
+            <div class="legend-item"><div class="legend-dot" style="background:rgba(239,68,68,0.6);"></div>Critical</div>
+            <div class="legend-item"><div class="legend-dot" style="background:rgba(139,92,246,0.6);"></div>ICU</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Alerts + Agent Feed + Actions -->
+      <div class="right-panel">
+        <!-- ALERTS -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><img src="img/agent_sentinel.png" alt="alerts"/> Alerts — Approval Required</div>
+            <div class="card-badge cb-red" id="alert-badge">4 PENDING</div>
+          </div>
+          <div class="alerts-list" id="alerts-list">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- AGENT FEED -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><img src="img/agent_command.png" alt="command"/> Agent Activity Feed</div>
+            <div class="ai-thinking">
+              <div class="thinking-dot"></div>
+              <div class="thinking-dot"></div>
+              <div class="thinking-dot"></div>
+              <span style="margin-left:0.25rem;">Agents processing...</span>
+            </div>
+          </div>
+          <div class="agent-feed" id="agent-feed">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- APPROVED ACTIONS LOG -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><img src="img/logo.png" alt="approved"/> Approved Actions Log</div>
+            <div class="card-badge cb-green" id="resolved-badge">14 Resolved Today</div>
+          </div>
+          <div class="actions-log" id="actions-log">
+            <div class="action-item"><span class="action-check">✓</span>EWS alert for Suresh Nair acknowledged<span class="action-time">14:22</span></div>
+            <div class="action-item"><span class="action-check">✓</span>Eco-mode activated — Wing C<span class="action-time">13:55</span></div>
+            <div class="action-item"><span class="action-check">✓</span>ICU bed 2 reserved for Ravi Krishnan<span class="action-time">13:40</span></div>
+            <div class="action-item"><span class="action-check">✓</span>Antibiotic escalation — Mohammed Ali<span class="action-time">12:18</span></div>
+            <div class="action-item"><span class="action-check">✓</span>Staff reassignment: Nurse Patel → Ward B<span class="action-time">11:50</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="js/simulation.js"></script>
+  <script>
+    const sim = new MediNexus();
+    let currentFilter = 'all';
+
+    // BELL SCROLL TO ALERTS
+    function scrollToAlerts() {
+      const alertsCard = document.getElementById('alerts-list').closest('.card');
+      if (!alertsCard) return;
+      alertsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Flash highlight
+      alertsCard.style.transition = 'box-shadow 0.3s';
+      alertsCard.style.boxShadow = '0 0 0 2px #ef4444, 0 0 24px rgba(239,68,68,0.4)';
+      setTimeout(() => { alertsCard.style.boxShadow = ''; }, 1800);
+    }
+    window.scrollToAlerts = scrollToAlerts;
+
+    // NAV SCROLL
+    window.addEventListener('scroll', () => {
+      document.querySelector('.nav').style.background = window.scrollY > 10
+        ? 'rgba(5,8,16,0.98)' : 'rgba(5,8,16,0.95)';
+    });
+
+    // ===== RENDER PATIENTS =====
+    function renderPatients(patients) {
+      const grid = document.getElementById('patients-grid');
+      const filtered = currentFilter === 'all' ? patients
+        : patients.filter(p => p.status === currentFilter);
+
+      grid.innerHTML = filtered.map(p => {
+        const ews = p.ews;
+        const ec = ewsColor(ews);
+        const ewsPct = (ews / 10) * 100;
+        return `
+        <div class="patient-card ${p.status}" onclick="window.location.href='patients.html'">
+          <div class="patient-header">
+            <div>
+              <div class="patient-name">${p.name}</div>
+              <div class="patient-info">Room ${p.room} · ${p.ward} · Age ${p.age}</div>
+            </div>
+            <span class="status-badge badge-${p.status}">${p.status.toUpperCase()}</span>
+          </div>
+          <div class="vitals-grid">
+            <div class="vital-item">
+              <div class="vital-name">HR</div>
+              <div class="vital-value" style="color:${vitalColor('hr',p.vitals.hr)}">${p.vitals.hr}</div>
+              <div class="vital-unit">bpm</div>
+            </div>
+            <div class="vital-item">
+              <div class="vital-name">SpO2</div>
+              <div class="vital-value" style="color:${vitalColor('spo2',p.vitals.spo2)}">${p.vitals.spo2}</div>
+              <div class="vital-unit">%</div>
+            </div>
+            <div class="vital-item">
+              <div class="vital-name">BP</div>
+              <div class="vital-value" style="color:${vitalColor('sbp',p.vitals.sbp)};font-size:0.82rem;">${p.vitals.sbp}/${p.vitals.dbp}</div>
+              <div class="vital-unit">mmHg</div>
+            </div>
+            <div class="vital-item">
+              <div class="vital-name">Temp</div>
+              <div class="vital-value" style="color:${vitalColor('temp',p.vitals.temp)}">${p.vitals.temp}</div>
+              <div class="vital-unit">°C</div>
+            </div>
+            <div class="vital-item">
+              <div class="vital-name">RR</div>
+              <div class="vital-value" style="color:${vitalColor('rr',p.vitals.rr)}">${p.vitals.rr}</div>
+              <div class="vital-unit">/min</div>
+            </div>
+            <div class="vital-item ews-item">
+              <div class="vital-name" style="text-align:left;font-weight:600;">Early Warning Score (EWS)</div>
+              <div class="ews-bar-wrap">
+                <div class="ews-bar-bg" style="flex:1;">
+                  <div class="ews-bar-fill" style="width:${ewsPct}%;background:${ec};"></div>
+                </div>
+                <span class="ews-label" style="color:${ec};">${ews}/10</span>
+              </div>
+            </div>
+          </div>
+          <div class="sparkline-row">
+            <span class="sparkline-label">HR</span>
+            ${makeSpark(p.history.hr, vitalColor('hr', p.vitals.hr))}
+          </div>
+          <div class="sparkline-row" style="margin-top:2px;">
+            <span class="sparkline-label">O2</span>
+            ${makeSpark(p.history.spo2, vitalColor('spo2', p.vitals.spo2))}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // ===== RENDER BEDS =====
+    function renderBeds(beds) {
+      const grid = document.getElementById('beds-grid');
+      const labels = { available:'FREE', occupied:'OCC', reserved:'RES', critical:'CRIT', icu:'ICU' };
+      grid.innerHTML = beds.map(b =>
+        `<div class="bed-cell-full bed-${b.status}" title="Bed ${b.id} — ${b.status}">
+          <div class="bcf-num">${b.id}</div>
+          <div class="bcf-num">${labels[b.status]}</div>
+        </div>`).join('');
+
+      const avail = beds.filter(b => b.status === 'available').length;
+      document.getElementById('bed-avail-badge').textContent = `${avail} Available`;
+      document.getElementById('stat-beds').textContent =
+        Math.round((beds.filter(b => b.status !== 'available').length / beds.length) * 100) + '%';
+    }
+
+    // ===== RENDER ALERTS =====
+    function renderAlerts(alerts) {
+      const list = document.getElementById('alerts-list');
+      document.getElementById('alert-count').textContent = alerts.length;
+      document.getElementById('alert-badge').textContent = alerts.length + ' PENDING';
+      if (!alerts.length) {
+        list.innerHTML = '<div class="no-alerts">✅ No pending alerts. All clear.</div>';
+        return;
+      }
+      list.innerHTML = alerts.map(a => `
+        <div class="alert-card ${a.severity}" id="alert-${a.id}">
+          <div class="alert-top">
+            <span class="alert-severity sev-${a.severity}">${a.severity.toUpperCase()}</span>
+            <span class="alert-room">${a.room}</span>
+          </div>
+          <div class="alert-title">${a.title}</div>
+          <div class="alert-desc">${a.desc}</div>
+          <div class="alert-agent">${a.agent} · ${a.time}</div>
+          <div class="alert-actions">
+            ${a.actions.map(act => `
+              <button class="btn ${act.cls}" onclick="handleAction('${act.fn}','${act.arg}','${a.id}')">
+                ${act.label}
+              </button>`).join('')}
+          </div>
+        </div>`).join('');
+    }
+
+    // ===== RENDER AGENT FEED =====
+    function renderAgentFeed(log) {
+      const feed = document.getElementById('agent-feed');
+      const agentMap = {};
+      AGENT_DEFS.forEach(a => { agentMap[a.id] = a; });
+      feed.innerHTML = log.slice(0, 15).map(m => {
+        const ag = agentMap[m.agent] || { name:m.agent, img:'img/agent_command.png', cls:'', nameCls:'' };
+        const avatar = ag.img
+          ? `<img src="${ag.img}" alt="${ag.name}"/>`
+          : (ag.emoji || '');
+        return `
+        <div class="agent-msg">
+          <div class="agent-avatar ${ag.cls}">${avatar}</div>
+          <div class="agent-msg-content">
+            <div class="agent-msg-name ${ag.nameCls}">${ag.name}</div>
+            <div class="agent-msg-text">${m.text}</div>
+            <div class="agent-msg-time">${m.time}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // ===== RENDER APPROVED ACTIONS =====
+    function renderApproved(actions) {
+      const log = document.getElementById('actions-log');
+      const resolved = sim.stats.alertsResolved;
+      document.getElementById('stat-resolved').textContent = resolved;
+      document.getElementById('resolved-badge').textContent = resolved + ' Resolved Today';
+      const newItems = actions.map(a => `
+        <div class="action-item">
+          <span class="action-check">✓</span>${a.text}
+          <span class="action-time">${a.time}</span>
+        </div>`).join('');
+      if (newItems) log.innerHTML = newItems + log.innerHTML.slice(0, 600);
+    }
+
+    // ===== HANDLE BUTTON ACTIONS =====
+    function handleAction(fn, arg, alertId) {
+      if (sim[fn]) sim[fn](arg);
+      // Remove the alert card
+      const card = document.getElementById('alert-' + alertId);
+      if (card) {
+        card.style.transition = 'opacity 0.3s, transform 0.3s';
+        card.style.opacity = '0'; card.style.transform = 'translateX(-20px)';
+        setTimeout(() => { sim.alerts = sim.alerts.filter(a => a.id !== alertId); renderAlerts(sim.alerts); }, 300);
+      }
+    }
+    window.handleAction = handleAction;
+
+    // ===== FILTER PATIENTS =====
+    function filterPatients(filter, btn) {
+      currentFilter = filter;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderPatients(sim.patients);
+    }
+    window.filterPatients = filterPatients;
+
+    // Expose AGENT_DEFS globally (needed for feed render)
+    window.AGENT_DEFS = [
+      { id:"sentinel", name:"SentinelAgent", img:"img/agent_sentinel.png", cls:"avatar-sentinel", nameCls:"name-sentinel" },
+      { id:"flow",     name:"FlowAgent",     img:"img/agent_flow.png",     cls:"avatar-flow",     nameCls:"name-flow" },
+      { id:"green",    name:"GreenAgent",    img:"img/agent_green.png",    cls:"avatar-green",    nameCls:"name-green" },
+      { id:"guide",    name:"CareGuide",     img:"img/agent_careguide.png",cls:"avatar-guide",    nameCls:"name-guide" },
+      { id:"command",  name:"CommandAgent",  img:"img/agent_command.png",  cls:"avatar-command",  nameCls:"name-command" },
+    ];
+
+    // Prevent duplicate alerts: mark pre-seeded critical patient IDs
+    const seededPatientIds = new Set(['5','7']);
+    const _origTrigger = sim.triggerPatientAlert.bind(sim);
+    sim.triggerPatientAlert = function(p) {
+      // Skip if this patient already has an alert in the list
+      const alreadyAlerted = sim.alerts.some(a => a.id !== 'a_' + Date.now() && a.title.includes(p.name));
+      if (!alreadyAlerted) _origTrigger(p);
+    };
+
+    // ===== WIRE UP SIMULATION EVENTS =====
+    sim.on('vitals', (patients) => { renderPatients(patients); });
+    sim.on('beds',   (beds)     => { renderBeds(beds); });
+    sim.on('alerts', (alerts)   => { renderAlerts(alerts); });
+    sim.on('agentLog',(log)     => { renderAgentFeed(log); });
+    sim.on('approved',(acts)    => { renderApproved(acts); });
+
+    // Initial render
+    renderPatients(sim.patients);
+    renderBeds(sim.beds);
+    renderAlerts(sim.alerts);
+    renderAgentFeed(sim.agentLog);
+
+    // Start simulation
+    sim.start();
+  </script>
+</body>
+</html>
+
