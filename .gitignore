@@ -13,6 +13,10 @@ env/
 
 # Qdrant local database (large binary files, rebuild with init_db.py)
 backend/qdrant_db/
+qdrant_db/
+
+# Runtime SQLite data files
+backend/data/*.db
 
 # Environment variables
 .env

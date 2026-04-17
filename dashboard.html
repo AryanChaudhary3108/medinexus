@@ -22,6 +22,42 @@
     .tab-btn.active, .tab-btn:hover {
       background: var(--primary-g); color: var(--primary);
     }
+    .role-tabs {
+      display:flex; gap:0.25rem; padding:0.35rem 1.25rem 0.65rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .role-btn {
+      padding:0.3rem 0.8rem; border-radius:6px; border:1px solid var(--border);
+      background:none; color:var(--muted); font-size:0.72rem; font-weight:700;
+      font-family:'Space Grotesk',sans-serif; cursor:pointer;
+    }
+    .role-btn.active, .role-btn:hover { background:var(--primary-g); color:var(--primary); border-color:rgba(14,165,233,0.4); }
+    .ops-strip {
+      display:flex; align-items:center; justify-content:space-between;
+      gap:0.6rem; padding:0.55rem 1.25rem 0.7rem; border-bottom:1px solid var(--border);
+      flex-wrap:wrap;
+    }
+    .ops-left, .ops-right { display:flex; align-items:center; gap:0.45rem; flex-wrap:wrap; }
+    .status-chip {
+      font-size:0.67rem; font-weight:700; letter-spacing:0.5px;
+      padding:0.28rem 0.6rem; border-radius:999px; border:1px solid var(--border);
+      background:rgba(255,255,255,0.03); color:var(--muted);
+    }
+    .status-chip.ok { color:#22c55e; border-color:rgba(34,197,94,0.45); background:rgba(34,197,94,0.08); }
+    .status-chip.warn { color:#f59e0b; border-color:rgba(245,158,11,0.45); background:rgba(245,158,11,0.08); }
+    .status-chip.demo { color:#06b6d4; border-color:rgba(6,182,212,0.45); background:rgba(6,182,212,0.1); }
+    .demo-toggle {
+      border:1px solid var(--border); background:none; color:var(--muted);
+      border-radius:7px; padding:0.3rem 0.75rem; cursor:pointer;
+      font-size:0.7rem; font-weight:700; font-family:'Space Grotesk',sans-serif;
+    }
+    .demo-toggle.active { color:#06b6d4; border-color:rgba(6,182,212,0.45); background:rgba(6,182,212,0.1); }
+    .why-btn {
+      border:1px solid rgba(14,165,233,0.35); background:rgba(14,165,233,0.08);
+      color:#38bdf8; border-radius:6px; padding:0.28rem 0.55rem;
+      font-size:0.66rem; font-weight:700; cursor:pointer; font-family:'Space Grotesk',sans-serif;
+    }
+    .why-btn:hover { background:rgba(14,165,233,0.16); }
     /* Beds grid full */
     .beds-full { display: grid; grid-template-columns: repeat(12,1fr); gap: 5px; padding: 1rem; }
     .bed-cell-full {
@@ -70,6 +106,104 @@
     .split-layout {
       display: grid; grid-template-columns: 1fr 1fr;
       gap: 1rem; padding: 1rem;
+    }
+    .patient-summary-grid {
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:0.45rem; margin-top:0.4rem;
+    }
+    .patient-summary-pill {
+      border:1px solid var(--border); border-radius:8px;
+      background:rgba(255,255,255,0.02); padding:0.45rem 0.5rem;
+    }
+    .patient-summary-label {
+      font-size:0.58rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;
+    }
+    .patient-summary-value {
+      font-size:0.72rem; line-height:1.22; font-weight:700; margin-top:2px;
+    }
+    .patient-detail-hint {
+      margin-top:0.45rem; padding-top:0.45rem; border-top:1px dashed var(--border);
+      font-size:0.66rem; color:var(--primary);
+    }
+    .dash-detail-modal {
+      position: fixed; inset: 0; display: none;
+      background: rgba(2,6,23,0.72); z-index: 50;
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    .dash-detail-modal.open { display:flex; }
+    .dash-detail-sheet {
+      width: min(900px, 100%); max-height: 88vh; overflow-y: auto;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+      box-shadow: 0 24px 80px rgba(2,6,23,0.55);
+    }
+    .dash-detail-head {
+      display:flex; justify-content:space-between; align-items:flex-start;
+      gap:1rem; padding:0.95rem 1.1rem; border-bottom:1px solid var(--border);
+      position: sticky; top: 0; background: var(--bg-card); z-index: 2;
+    }
+    .dash-detail-title { font-size:1rem; font-weight:700; }
+    .dash-detail-meta { font-size:0.74rem; color:var(--muted); margin-top:0.2rem; }
+    .dash-detail-close {
+      border:1px solid var(--border); background:none; color:var(--muted);
+      border-radius:6px; padding:0.35rem 0.75rem; cursor:pointer;
+      font-size:0.76rem; font-weight:700; font-family:'Space Grotesk',sans-serif;
+    }
+    .dash-detail-close:hover { color:var(--text); border-color:var(--primary); }
+    .dash-detail-body { padding: 1rem 1.1rem 1.2rem; }
+    .dash-detail-grid {
+      display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:0.7rem;
+    }
+    .dash-detail-card {
+      border:1px solid var(--border); border-radius:10px;
+      background:rgba(255,255,255,0.02); padding:0.75rem;
+    }
+    .dash-detail-card h4 {
+      font-size:0.68rem; letter-spacing:1.2px; text-transform:uppercase;
+      color:var(--muted); margin:0 0 0.45rem;
+    }
+    .dash-detail-line { font-size:0.77rem; line-height:1.42; margin:0.16rem 0; }
+    .dash-detail-line b { color:var(--primary); margin-right:0.25rem; }
+    .explain-modal {
+      position: fixed; inset: 0; display: none;
+      background: rgba(2,6,23,0.72); z-index: 52;
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    .explain-modal.open { display:flex; }
+    .explain-sheet {
+      width:min(760px, 100%); max-height:88vh; overflow-y:auto;
+      background:var(--bg-card); border:1px solid var(--border); border-radius:14px;
+      box-shadow:0 24px 80px rgba(2,6,23,0.55);
+    }
+    .explain-head {
+      display:flex; justify-content:space-between; align-items:flex-start; gap:1rem;
+      padding:0.95rem 1.05rem; border-bottom:1px solid var(--border);
+      position:sticky; top:0; background:var(--bg-card); z-index:2;
+    }
+    .explain-title { font-size:0.95rem; font-weight:700; }
+    .explain-sub { font-size:0.72rem; color:var(--muted); margin-top:0.2rem; }
+    .explain-close {
+      border:1px solid var(--border); background:none; color:var(--muted);
+      border-radius:6px; padding:0.35rem 0.75rem; cursor:pointer;
+      font-size:0.76rem; font-weight:700; font-family:'Space Grotesk',sans-serif;
+    }
+    .explain-close:hover { color:var(--text); border-color:var(--primary); }
+    .explain-body { padding:0.95rem 1.05rem 1.1rem; }
+    .explain-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:0.65rem; }
+    .explain-card {
+      border:1px solid var(--border); border-radius:10px; background:rgba(255,255,255,0.02);
+      padding:0.72rem;
+    }
+    .explain-card h4 { font-size:0.66rem; letter-spacing:1.1px; text-transform:uppercase; color:var(--muted); margin:0 0 0.4rem; }
+    .explain-line { font-size:0.77rem; line-height:1.45; margin:0.2rem 0; }
+    .drivers { margin-top:0.35rem; display:flex; flex-wrap:wrap; gap:0.35rem; }
+    .driver-tag {
+      font-size:0.66rem; color:#38bdf8; border:1px solid rgba(14,165,233,0.35);
+      background:rgba(14,165,233,0.08); border-radius:6px; padding:0.2rem 0.45rem;
+    }
+    @media (max-width:900px) {
+      .patient-summary-grid { grid-template-columns:1fr; }
+      .dash-detail-grid { grid-template-columns:1fr; }
+      .explain-grid { grid-template-columns:1fr; }
     }
     @media (max-width:900px) { .split-layout { grid-template-columns: 1fr; } }
   </style>
@@ -145,15 +279,30 @@
 
       <!-- LEFT: Patient Grid + Bed Map -->
       <div>
-        <!-- Patient Vitals -->
+        <!-- Patient Symptoms -->
         <div class="card" style="margin-bottom:1rem;">
           <div class="card-header">
-            <div class="card-title"><img src="img/agent_sentinel.png" alt="sentinel"/> Live Patient Vitals — SentinelAgent</div>
+            <div class="card-title"><img src="img/agent_sentinel.png" alt="sentinel"/> Live Symptom Observation — SentinelAgent</div>
             <div class="section-tabs" style="padding:0;border:none;">
               <button class="tab-btn active" onclick="filterPatients('all',this)">All</button>
               <button class="tab-btn" onclick="filterPatients('critical',this)">Critical</button>
               <button class="tab-btn" onclick="filterPatients('warning',this)">Warning</button>
               <button class="tab-btn" onclick="filterPatients('stable',this)">Stable</button>
+            </div>
+          </div>
+          <div class="role-tabs">
+            <button class="role-btn active" onclick="setViewRole('nurse',this)">Nurse View</button>
+            <button class="role-btn" onclick="setViewRole('doctor',this)">Doctor View</button>
+            <button class="role-btn" onclick="setViewRole('admin',this)">Admin View</button>
+          </div>
+          <div class="ops-strip">
+            <div class="ops-left">
+              <span class="status-chip warn" id="connection-chip">Checking backend...</span>
+              <span class="status-chip" id="source-chip">Data: fallback</span>
+            </div>
+            <div class="ops-right">
+              <span class="status-chip" id="demo-chip">Live updates running</span>
+              <button class="demo-toggle" id="demo-toggle" onclick="toggleDemoMode()">Enable Demo Mode</button>
             </div>
           </div>
           <div class="patients-grid patients-grid-section" id="patients-grid">
@@ -214,10 +363,10 @@
             <div class="card-badge cb-green" id="resolved-badge">14 Resolved Today</div>
           </div>
           <div class="actions-log" id="actions-log">
-            <div class="action-item"><span class="action-check">✓</span>EWS alert for Suresh Nair acknowledged<span class="action-time">14:22</span></div>
+            <div class="action-item"><span class="action-check">✓</span>EWS alert for high-acuity ICU patient acknowledged<span class="action-time">14:22</span></div>
             <div class="action-item"><span class="action-check">✓</span>Eco-mode activated — Wing C<span class="action-time">13:55</span></div>
-            <div class="action-item"><span class="action-check">✓</span>ICU bed 2 reserved for Ravi Krishnan<span class="action-time">13:40</span></div>
-            <div class="action-item"><span class="action-check">✓</span>Antibiotic escalation — Mohammed Ali<span class="action-time">12:18</span></div>
+            <div class="action-item"><span class="action-check">✓</span>ICU bed 2 reserved for critical care case<span class="action-time">13:40</span></div>
+            <div class="action-item"><span class="action-check">✓</span>Antibiotic escalation approved for ward infection case<span class="action-time">12:18</span></div>
             <div class="action-item"><span class="action-check">✓</span>Staff reassignment: Nurse Patel → Ward B<span class="action-time">11:50</span></div>
           </div>
         </div>
@@ -226,10 +375,68 @@
     </div>
   </div>
 
+  <div class="dash-detail-modal" id="dash-detail-modal" onclick="closeDashboardPatientDetail(event)">
+    <div class="dash-detail-sheet" onclick="event.stopPropagation()">
+      <div class="dash-detail-head">
+        <div>
+          <div class="dash-detail-title" id="dash-detail-title">Patient Detail</div>
+          <div class="dash-detail-meta" id="dash-detail-meta">Operational detail view</div>
+        </div>
+        <button class="dash-detail-close" onclick="closeDashboardPatientDetail()">Close</button>
+      </div>
+      <div class="dash-detail-body" id="dash-detail-body"></div>
+    </div>
+  </div>
+
+  <div class="explain-modal" id="explain-modal" onclick="closeExplainability(event)">
+    <div class="explain-sheet" onclick="event.stopPropagation()">
+      <div class="explain-head">
+        <div>
+          <div class="explain-title" id="explain-title">Alert Explainability</div>
+          <div class="explain-sub" id="explain-sub">Why this alert was raised</div>
+        </div>
+        <button class="explain-close" onclick="closeExplainability()">Close</button>
+      </div>
+      <div class="explain-body" id="explain-body"></div>
+    </div>
+  </div>
+
   <script src="js/simulation.js"></script>
   <script>
     const sim = new MediNexus();
     let currentFilter = 'all';
+    let activeRole = 'nurse';
+
+    function escHtml(s) {
+      return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function renderConnection(state) {
+      const chip = document.getElementById('connection-chip');
+      const source = document.getElementById('source-chip');
+      if (!chip || !source || !state) return;
+      chip.className = `status-chip ${state.backendConnected ? 'ok' : 'warn'}`;
+      chip.textContent = state.backendConnected ? 'Backend connected' : 'Fallback mode active';
+      source.textContent = `Data: ${state.source}`;
+    }
+
+    function renderDemoMode(isDemo) {
+      const chip = document.getElementById('demo-chip');
+      const toggle = document.getElementById('demo-toggle');
+      if (!chip || !toggle) return;
+      chip.className = `status-chip ${isDemo ? 'demo' : ''}`;
+      chip.textContent = isDemo ? 'Demo mode frozen' : 'Live updates running';
+      toggle.classList.toggle('active', isDemo);
+      toggle.textContent = isDemo ? 'Disable Demo Mode' : 'Enable Demo Mode';
+    }
+
+    function toggleDemoMode() {
+      sim.setDemoMode(!sim.getDemoMode());
+    }
+    window.toggleDemoMode = toggleDemoMode;
 
     // BELL SCROLL TO ALERTS
     function scrollToAlerts() {
@@ -258,9 +465,10 @@
       grid.innerHTML = filtered.map(p => {
         const ews = p.ews;
         const ec = ewsColor(ews);
-        const ewsPct = (ews / 10) * 100;
+        const sp = getSymptomProfile(p);
+        const rv = getRoleView(p, activeRole);
         return `
-        <div class="patient-card ${p.status}" onclick="window.location.href='patients.html'">
+        <div class="patient-card ${p.status}" onclick="openDashboardPatientDetail(${p.id})">
           <div class="patient-header">
             <div>
               <div class="patient-name">${p.name}</div>
@@ -268,53 +476,91 @@
             </div>
             <span class="status-badge badge-${p.status}">${p.status.toUpperCase()}</span>
           </div>
-          <div class="vitals-grid">
-            <div class="vital-item">
-              <div class="vital-name">HR</div>
-              <div class="vital-value" style="color:${vitalColor('hr',p.vitals.hr)}">${p.vitals.hr}</div>
-              <div class="vital-unit">bpm</div>
+          <div class="patient-summary-grid">
+            <div class="patient-summary-pill">
+              <div class="patient-summary-label">Primary Symptom</div>
+              <div class="patient-summary-value" style="color:${sp.levelColor}">${sp.primary}</div>
             </div>
-            <div class="vital-item">
-              <div class="vital-name">SpO2</div>
-              <div class="vital-value" style="color:${vitalColor('spo2',p.vitals.spo2)}">${p.vitals.spo2}</div>
-              <div class="vital-unit">%</div>
+            <div class="patient-summary-pill">
+              <div class="patient-summary-label">Risk</div>
+              <div class="patient-summary-value" style="color:${ec}">${ews}/10 · ${sp.level.toUpperCase()}</div>
             </div>
-            <div class="vital-item">
-              <div class="vital-name">BP</div>
-              <div class="vital-value" style="color:${vitalColor('sbp',p.vitals.sbp)};font-size:0.82rem;">${p.vitals.sbp}/${p.vitals.dbp}</div>
-              <div class="vital-unit">mmHg</div>
+            <div class="patient-summary-pill">
+              <div class="patient-summary-label">Role Focus (${activeRole})</div>
+              <div class="patient-summary-value">${rv.focus}</div>
             </div>
-            <div class="vital-item">
-              <div class="vital-name">Temp</div>
-              <div class="vital-value" style="color:${vitalColor('temp',p.vitals.temp)}">${p.vitals.temp}</div>
-              <div class="vital-unit">°C</div>
-            </div>
-            <div class="vital-item">
-              <div class="vital-name">RR</div>
-              <div class="vital-value" style="color:${vitalColor('rr',p.vitals.rr)}">${p.vitals.rr}</div>
-              <div class="vital-unit">/min</div>
-            </div>
-            <div class="vital-item ews-item">
-              <div class="vital-name" style="text-align:left;font-weight:600;">Early Warning Score (EWS)</div>
-              <div class="ews-bar-wrap">
-                <div class="ews-bar-bg" style="flex:1;">
-                  <div class="ews-bar-fill" style="width:${ewsPct}%;background:${ec};"></div>
-                </div>
-                <span class="ews-label" style="color:${ec};">${ews}/10</span>
-              </div>
+            <div class="patient-summary-pill">
+              <div class="patient-summary-label">Next Action</div>
+              <div class="patient-summary-value">${rv.action}</div>
             </div>
           </div>
-          <div class="sparkline-row">
-            <span class="sparkline-label">HR</span>
-            ${makeSpark(p.history.hr, vitalColor('hr', p.vitals.hr))}
-          </div>
-          <div class="sparkline-row" style="margin-top:2px;">
-            <span class="sparkline-label">O2</span>
-            ${makeSpark(p.history.spo2, vitalColor('spo2', p.vitals.spo2))}
-          </div>
+          <div class="patient-detail-hint">Click for full details and SOAP note</div>
         </div>`;
       }).join('');
     }
+
+    function openDashboardPatientDetail(patientId) {
+      const patient = sim.patients.find(p => p.id === patientId);
+      if (!patient) return;
+
+      const sp = getSymptomProfile(patient);
+      const rv = getRoleView(patient, activeRole);
+      const soap = buildSoapMiniNote(patient, activeRole);
+
+      document.getElementById('dash-detail-title').textContent = `${patient.name} · ${patient.ward} ${patient.bed}`;
+      document.getElementById('dash-detail-meta').textContent = `Role view: ${activeRole.toUpperCase()} · Risk ${patient.ews}/10 (${patient.status.toUpperCase()})`;
+
+      document.getElementById('dash-detail-body').innerHTML = `
+        <div class="dash-detail-grid">
+          <div class="dash-detail-card">
+            <h4>Quick Overview</h4>
+            <div class="dash-detail-line"><b>Primary symptom:</b>${escHtml(sp.primary)}</div>
+            <div class="dash-detail-line"><b>Severity:</b><span style="color:${sp.levelColor}">${escHtml(sp.level.toUpperCase())}</span></div>
+            <div class="dash-detail-line"><b>Onset:</b>${escHtml(sp.onset)}</div>
+            <div class="dash-detail-line"><b>Pain/distress:</b>${escHtml(sp.painScore)}/10</div>
+            <div class="dash-detail-line"><b>Mobility:</b>${escHtml(sp.mobility)}</div>
+          </div>
+          <div class="dash-detail-card">
+            <h4>${activeRole.toUpperCase()} Role Briefing</h4>
+            <div class="dash-detail-line"><b>Focus:</b>${escHtml(rv.focus)}</div>
+            <div class="dash-detail-line"><b>Priority:</b>${escHtml(rv.priority)}</div>
+            <div class="dash-detail-line"><b>Action:</b>${escHtml(rv.action)}</div>
+            <div class="dash-detail-line"><b>Summary:</b>${escHtml(rv.summary)}</div>
+          </div>
+          <div class="dash-detail-card">
+            <h4>SOAP Mini-Note</h4>
+            <div class="dash-detail-line"><b>S:</b>${escHtml(soap.s)}</div>
+            <div class="dash-detail-line"><b>O:</b>${escHtml(soap.o)}</div>
+            <div class="dash-detail-line"><b>A:</b>${escHtml(soap.a)}</div>
+            <div class="dash-detail-line"><b>P:</b>${escHtml(soap.p)}</div>
+          </div>
+          <div class="dash-detail-card">
+            <h4>Operational Context</h4>
+            <div class="dash-detail-line"><b>Conditions:</b>${escHtml((patient.conditions || []).join(', ') || 'None listed')}</div>
+            <div class="dash-detail-line"><b>Care notes:</b>${escHtml(patient.notes || 'Observation note pending update')}</div>
+            <div class="dash-detail-line"><b>Pending labs:</b>${escHtml(patient.pendingLabs || 'No urgent labs pending')}</div>
+            <div class="dash-detail-line"><b>Room:</b>${escHtml(patient.room)} · <b>Age:</b>${escHtml(patient.age)}</div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('dash-detail-modal').classList.add('open');
+    }
+    window.openDashboardPatientDetail = openDashboardPatientDetail;
+
+    function closeDashboardPatientDetail(event) {
+      if (event && event.target && event.target.id && event.target.id !== 'dash-detail-modal') return;
+      document.getElementById('dash-detail-modal').classList.remove('open');
+    }
+    window.closeDashboardPatientDetail = closeDashboardPatientDetail;
+
+    function setViewRole(role, btn) {
+      activeRole = role;
+      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderPatients(sim.patients);
+    }
+    window.setViewRole = setViewRole;
 
     // ===== RENDER BEDS =====
     function renderBeds(beds) {
@@ -350,6 +596,9 @@
           <div class="alert-title">${a.title}</div>
           <div class="alert-desc">${a.desc}</div>
           <div class="alert-agent">${a.agent} · ${a.time}</div>
+          <div style="margin-bottom:0.45rem;">
+            <button class="why-btn" onclick="openExplainability('${a.id}')">Why this alert?</button>
+          </div>
           <div class="alert-actions">
             ${a.actions.map(act => `
               <button class="btn ${act.cls}" onclick="handleAction('${act.fn}','${act.arg}','${a.id}')">
@@ -408,6 +657,47 @@
     }
     window.handleAction = handleAction;
 
+    function openExplainability(alertId) {
+      const alert = sim.alerts.find(a => a.id === alertId);
+      if (!alert) return;
+      const explain = alert.explain || {
+        trigger: 'Clinical threshold exceeded',
+        drivers: ['Risk score and symptom trajectory'],
+        confidence: 'Moderate',
+        ifIgnored: 'Potential delay in intervention',
+      };
+
+      document.getElementById('explain-title').textContent = alert.title.replace(/[⚠️🚨🫀🌡️🌿]/g, '').trim() || 'Alert Explainability';
+      document.getElementById('explain-sub').textContent = `${alert.room} · ${alert.agent} · ${alert.time}`;
+      document.getElementById('explain-body').innerHTML = `
+        <div class="explain-grid">
+          <div class="explain-card">
+            <h4>Trigger</h4>
+            <div class="explain-line">${escHtml(explain.trigger)}</div>
+            <div class="drivers">${(explain.drivers || []).map(d => `<span class="driver-tag">${escHtml(d)}</span>`).join('')}</div>
+          </div>
+          <div class="explain-card">
+            <h4>Confidence</h4>
+            <div class="explain-line"><b>Model confidence:</b>${escHtml(explain.confidence || 'Moderate')}</div>
+            <div class="explain-line"><b>If ignored:</b>${escHtml(explain.ifIgnored || 'Potential care delay')}</div>
+          </div>
+          <div class="explain-card" style="grid-column:1 / -1;">
+            <h4>Current Recommendation</h4>
+            <div class="explain-line">${escHtml(alert.desc)}</div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('explain-modal').classList.add('open');
+    }
+    window.openExplainability = openExplainability;
+
+    function closeExplainability(event) {
+      if (event && event.target && event.target.id && event.target.id !== 'explain-modal') return;
+      document.getElementById('explain-modal').classList.remove('open');
+    }
+    window.closeExplainability = closeExplainability;
+
     // ===== FILTER PATIENTS =====
     function filterPatients(filter, btn) {
       currentFilter = filter;
@@ -435,20 +725,24 @@
       if (!alreadyAlerted) _origTrigger(p);
     };
 
-    // ===== WIRE UP SIMULATION EVENTS =====
+    // ===== WIRE UP LIVE OBSERVATION EVENTS =====
     sim.on('vitals', (patients) => { renderPatients(patients); });
     sim.on('beds',   (beds)     => { renderBeds(beds); });
     sim.on('alerts', (alerts)   => { renderAlerts(alerts); });
     sim.on('agentLog',(log)     => { renderAgentFeed(log); });
     sim.on('approved',(acts)    => { renderApproved(acts); });
+    sim.on('connection', (state) => { renderConnection(state); });
+    sim.on('demoMode', (isDemo) => { renderDemoMode(isDemo); });
 
     // Initial render
     renderPatients(sim.patients);
     renderBeds(sim.beds);
     renderAlerts(sim.alerts);
     renderAgentFeed(sim.agentLog);
+    renderConnection(sim.getConnectionState());
+    renderDemoMode(sim.getDemoMode());
 
-    // Start simulation
+    // Start live observation updates
     sim.start();
   </script>
 </body>

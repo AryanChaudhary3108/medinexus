@@ -54,17 +54,20 @@ Backend:
 - Qdrant (local file-based)
 - FastEmbed (`BAAI/bge-small-en-v1.5`)
 - Groq API (`llama3-8b-8192`)
+- SQLite patient store (`backend/data/medinexus.db`)
 
 ## How It Works
 
 1. Frontend pages render dashboards and use `js/simulation.js` to simulate real-time hospital data.
 2. `backend/init_db.py` embeds hospital knowledge snippets and indexes them into a local Qdrant collection.
-3. `backend/main.py` exposes `POST /api/chat`:
+3. `backend/main.py` initializes an operational SQLite patient database (seeded from `backend/data/patients_seed.json`).
+4. `backend/main.py` exposes `POST /api/chat`:
    - Embeds user query
    - Retrieves top relevant knowledge chunks from Qdrant
+  - Injects live patient snapshot from SQLite (not hard-coded in source)
    - Builds a grounded system prompt
    - Sends response request to Groq LLM
-4. Backend returns a concise multilingual reply.
+5. Backend returns a concise multilingual reply.
 
 ## Setup and Run
 
@@ -126,7 +129,7 @@ Windows (PowerShell):
 Install dependencies:
 
 ```bash
-pip install fastapi uvicorn qdrant-client fastembed groq
+pip install fastapi uvicorn qdrant-client fastembed groq python-dotenv
 ```
 
 Set environment variable:
@@ -135,6 +138,12 @@ Windows (PowerShell):
 
 ```powershell
 $env:GROQ_API_KEY="your_groq_api_key_here"
+```
+
+Or create `backend/.env` from `backend/.env.example` and set:
+
+```env
+GROQ_API_KEY=your_groq_api_key_here
 ```
 
 Initialize vector DB:
@@ -174,6 +183,35 @@ Response:
   "reply": "...assistant response..."
 }
 ```
+
+### `GET /api/patients`
+
+Returns active patient records from SQLite:
+
+```json
+{
+  "patients": [
+    {
+      "id": 1,
+      "patient_code": "P-1001",
+      "display_name": "Patient 1001",
+      "ward": "General",
+      "bed": "G-01",
+      "ews": 1,
+      "status": "stable",
+      "vitals": { "hr": 75, "spo2": 97, "sbp": 125, "dbp": 82, "temp": 37.1, "rr": 16 }
+    }
+  ]
+}
+```
+
+### `POST /api/patients`
+
+Creates a new patient record in SQLite.
+
+### `PATCH /api/patients/{patient_id}`
+
+Updates an existing patient record in SQLite.
 
 ## Important Note About Current Chat Integration
 

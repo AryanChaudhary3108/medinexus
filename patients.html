@@ -67,6 +67,15 @@
     .search-top {
       display: flex; align-items: center; gap: 1rem;
     }
+    .add-btn {
+      border:1px solid rgba(14,165,233,0.4);
+      background:var(--primary-g); color:var(--primary);
+      border-radius:8px; padding:0.5rem 0.9rem;
+      font-size:0.78rem; font-weight:700; letter-spacing:0.35px;
+      font-family:'Space Grotesk',sans-serif; cursor:pointer;
+      white-space:nowrap;
+    }
+    .add-btn:hover { filter:brightness(1.1); }
     .search-inp {
       flex: 1; max-width: 300px;
       background: rgba(255,255,255,0.05);
@@ -84,6 +93,152 @@
       cursor: pointer; transition: all 0.2s; letter-spacing: 0.5px;
     }
     .wf-btn.active, .wf-btn:hover { background:var(--primary-g); color:var(--primary); border-color:rgba(14,165,233,0.4); }
+    .summary-grid {
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:0.55rem; margin-bottom:0.7rem;
+    }
+    .summary-pill {
+      border:1px solid var(--border); border-radius:8px;
+      background:rgba(255,255,255,0.02); padding:0.55rem 0.6rem;
+    }
+    .summary-label { font-size:0.58rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+    .summary-value { font-size:0.78rem; font-weight:700; margin-top:3px; line-height:1.2; }
+    .detail-hint {
+      font-size:0.68rem; color:var(--primary);
+      border-top:1px dashed var(--border); padding-top:0.55rem;
+      letter-spacing:0.2px;
+    }
+    .role-strip { display:flex; align-items:center; gap:0.4rem; margin-bottom:0.75rem; }
+    .role-tag { font-size:0.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:1.4px; margin-right:0.35rem; }
+    .role-btn {
+      padding:0.35rem 0.75rem; border-radius:6px; border:1px solid var(--border);
+      background:none; color:var(--muted); font-size:0.72rem; font-weight:700;
+      font-family:'Space Grotesk',sans-serif; cursor:pointer;
+    }
+    .role-btn.active, .role-btn:hover { background:var(--primary-g); color:var(--primary); border-color:rgba(14,165,233,0.4); }
+    .ops-strip {
+      display:flex; align-items:center; justify-content:space-between;
+      gap:0.55rem; margin:0.15rem 0 0.8rem; flex-wrap:wrap;
+    }
+    .ops-left, .ops-right { display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap; }
+    .status-chip {
+      font-size:0.67rem; font-weight:700; letter-spacing:0.45px;
+      padding:0.28rem 0.58rem; border-radius:999px; border:1px solid var(--border);
+      background:rgba(255,255,255,0.03); color:var(--muted);
+    }
+    .status-chip.ok { color:#22c55e; border-color:rgba(34,197,94,0.45); background:rgba(34,197,94,0.08); }
+    .status-chip.warn { color:#f59e0b; border-color:rgba(245,158,11,0.45); background:rgba(245,158,11,0.08); }
+    .status-chip.demo { color:#06b6d4; border-color:rgba(6,182,212,0.45); background:rgba(6,182,212,0.1); }
+    .demo-toggle {
+      border:1px solid var(--border); background:none; color:var(--muted);
+      border-radius:7px; padding:0.31rem 0.72rem; cursor:pointer;
+      font-size:0.7rem; font-weight:700; font-family:'Space Grotesk',sans-serif;
+    }
+    .demo-toggle.active { color:#06b6d4; border-color:rgba(6,182,212,0.45); background:rgba(6,182,212,0.1); }
+    .soap-box {
+      margin-top:0.7rem; padding:0.65rem 0.75rem;
+      border:1px solid var(--border); border-radius:8px;
+      background:rgba(255,255,255,0.02);
+    }
+    .soap-head { font-size:0.6rem; color:var(--muted); letter-spacing:1.3px; text-transform:uppercase; margin-bottom:0.35rem; }
+    .soap-line { font-size:0.7rem; line-height:1.45; color:var(--text); margin-bottom:0.18rem; }
+    .soap-line b { color:var(--primary); margin-right:0.25rem; }
+    .detail-modal {
+      position: fixed; inset: 0; display: none;
+      background: rgba(2,6,23,0.72); z-index: 40;
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    .detail-modal.open { display:flex; }
+    .detail-sheet {
+      width: min(860px, 100%); max-height: 88vh; overflow-y: auto;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+      box-shadow: 0 25px 80px rgba(2,6,23,0.55);
+    }
+    .detail-head {
+      display:flex; justify-content:space-between; align-items:flex-start;
+      gap:1rem; padding:1rem 1.1rem; border-bottom:1px solid var(--border);
+      position: sticky; top: 0; background: var(--bg-card); z-index: 2;
+    }
+    .detail-title { font-size:1rem; font-weight:700; }
+    .detail-meta { font-size:0.74rem; color:var(--muted); margin-top:0.25rem; }
+    .detail-close {
+      border:1px solid var(--border); background:none; color:var(--muted);
+      border-radius:6px; font-size:0.78rem; font-weight:700;
+      font-family:'Space Grotesk',sans-serif; padding:0.35rem 0.75rem; cursor:pointer;
+    }
+    .detail-close:hover { color:var(--text); border-color:var(--primary); }
+    .detail-body { padding: 1rem 1.1rem 1.2rem; }
+    .detail-sections {
+      display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:0.7rem;
+    }
+    .detail-card {
+      border:1px solid var(--border); border-radius:10px; background:rgba(255,255,255,0.02); padding:0.75rem;
+    }
+    .detail-card h4 {
+      font-size:0.68rem; letter-spacing:1.3px; text-transform:uppercase;
+      color:var(--muted); margin:0 0 0.45rem;
+    }
+    .detail-line { font-size:0.78rem; line-height:1.45; margin:0.18rem 0; }
+    .detail-line b { color:var(--primary); font-weight:700; margin-right:0.25rem; }
+    .entry-modal {
+      position: fixed; inset: 0; display: none;
+      background: rgba(2,6,23,0.72); z-index: 45;
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    .entry-modal.open { display:flex; }
+    .entry-sheet {
+      width:min(860px,100%); max-height:90vh; overflow-y:auto;
+      background:var(--bg-card); border:1px solid var(--border); border-radius:14px;
+      box-shadow:0 24px 80px rgba(2,6,23,0.55);
+    }
+    .entry-head {
+      display:flex; justify-content:space-between; align-items:flex-start;
+      gap:1rem; padding:0.95rem 1.1rem; border-bottom:1px solid var(--border);
+      position:sticky; top:0; background:var(--bg-card); z-index:2;
+    }
+    .entry-title { font-size:0.98rem; font-weight:700; }
+    .entry-sub { font-size:0.73rem; color:var(--muted); margin-top:0.22rem; }
+    .entry-close {
+      border:1px solid var(--border); background:none; color:var(--muted);
+      border-radius:6px; font-size:0.76rem; font-weight:700;
+      font-family:'Space Grotesk',sans-serif; padding:0.34rem 0.75rem; cursor:pointer;
+    }
+    .entry-close:hover { color:var(--text); border-color:var(--primary); }
+    .entry-form { padding:0.9rem 1.1rem 1.15rem; }
+    .entry-grid {
+      display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:0.6rem;
+    }
+    .entry-field { display:flex; flex-direction:column; gap:0.3rem; }
+    .entry-field label {
+      font-size:0.62rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase;
+    }
+    .entry-field input, .entry-field select, .entry-field textarea {
+      background:rgba(255,255,255,0.04); border:1px solid var(--border);
+      border-radius:8px; padding:0.48rem 0.6rem; color:var(--text);
+      font-family:'Space Grotesk',sans-serif; font-size:0.8rem; outline:none;
+    }
+    .entry-field textarea { min-height:72px; resize:vertical; }
+    .entry-field input:focus, .entry-field select:focus, .entry-field textarea:focus { border-color:var(--primary); }
+    .entry-field.full { grid-column:1 / -1; }
+    .entry-actions { display:flex; justify-content:flex-end; gap:0.55rem; margin-top:0.85rem; }
+    .entry-save {
+      border:1px solid rgba(16,185,129,0.45); background:rgba(16,185,129,0.15); color:#34d399;
+      border-radius:8px; padding:0.48rem 0.9rem; font-size:0.76rem; font-weight:700;
+      font-family:'Space Grotesk',sans-serif; cursor:pointer;
+    }
+    .entry-cancel {
+      border:1px solid var(--border); background:none; color:var(--muted);
+      border-radius:8px; padding:0.48rem 0.9rem; font-size:0.76rem; font-weight:700;
+      font-family:'Space Grotesk',sans-serif; cursor:pointer;
+    }
+    .entry-note { margin-top:0.6rem; font-size:0.72rem; color:var(--muted); }
+    .entry-error { margin-top:0.6rem; font-size:0.72rem; color:#f87171; }
+    @media (max-width: 760px) {
+      .detail-sections { grid-template-columns: 1fr; }
+      .summary-grid { grid-template-columns: 1fr; }
+      .entry-grid { grid-template-columns:1fr; }
+      .search-top { flex-direction:column; align-items:stretch; }
+    }
   </style>
 </head>
 <body>
@@ -111,12 +266,29 @@
         <div class="page-title">🛡️ Patient Monitoring — SentinelAgent
           <span class="card-badge cb-red" id="critical-count" style="font-size:0.7rem;">2 CRITICAL</span>
         </div>
-        <div class="page-sub">Real-time vitals for all 12 monitored patients · EWS updated every 2.5 seconds</div>
+        <div class="page-sub">Symptom-led observation board for monitored patients · clinical risk score updates every 2.5 seconds</div>
       </div>
     </div>
 
     <div class="patients-wrap">
+      <div class="role-strip">
+        <span class="role-tag">View:</span>
+        <button class="role-btn active" onclick="setRole('nurse',this)">Nurse</button>
+        <button class="role-btn" onclick="setRole('doctor',this)">Doctor</button>
+        <button class="role-btn" onclick="setRole('admin',this)">Admin</button>
+      </div>
+      <div class="ops-strip">
+        <div class="ops-left">
+          <span class="status-chip warn" id="connection-chip">Checking backend...</span>
+          <span class="status-chip" id="source-chip">Data: fallback</span>
+        </div>
+        <div class="ops-right">
+          <span class="status-chip" id="demo-chip">Live updates running</span>
+          <button class="demo-toggle" id="demo-toggle" onclick="toggleDemoMode()">Enable Demo Mode</button>
+        </div>
+      </div>
       <div class="search-top">
+        <button class="add-btn" onclick="openPatientEntryModal()">+ New Patient</button>
         <input class="search-inp" id="search" placeholder="🔍  Search patient name..." oninput="renderAll()"/>
         <div class="ward-filter" id="ward-filter">
           <button class="wf-btn active" onclick="setWard('all',this)">All Wards</button>
@@ -130,10 +302,128 @@
     </div>
   </div>
 
+  <div class="detail-modal" id="detail-modal" onclick="closePatientDetail(event)">
+    <div class="detail-sheet" onclick="event.stopPropagation()">
+      <div class="detail-head">
+        <div>
+          <div class="detail-title" id="detail-title">Patient Detail</div>
+          <div class="detail-meta" id="detail-meta">Role-specific clinical summary</div>
+        </div>
+        <button class="detail-close" onclick="closePatientDetail()">Close</button>
+      </div>
+      <div class="detail-body" id="detail-body"></div>
+    </div>
+  </div>
+
+  <div class="entry-modal" id="entry-modal" onclick="closePatientEntryModal(event)">
+    <div class="entry-sheet" onclick="event.stopPropagation()">
+      <div class="entry-head">
+        <div>
+          <div class="entry-title">New Patient Entry</div>
+          <div class="entry-sub">Create a patient record in the operational backend database</div>
+        </div>
+        <button class="entry-close" onclick="closePatientEntryModal()">Close</button>
+      </div>
+      <form class="entry-form" id="entry-form" onsubmit="submitPatientEntry(event)">
+        <div class="entry-grid">
+          <div class="entry-field">
+            <label>Display Name *</label>
+            <input id="pf-name" required minlength="2" placeholder="Patient 1013"/>
+          </div>
+          <div class="entry-field">
+            <label>Age *</label>
+            <input id="pf-age" type="number" min="0" max="130" required placeholder="52"/>
+          </div>
+          <div class="entry-field">
+            <label>Sex</label>
+            <select id="pf-sex">
+              <option value="">Not specified</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="entry-field">
+            <label>Ward *</label>
+            <input id="pf-ward" required placeholder="General"/>
+          </div>
+          <div class="entry-field">
+            <label>Bed *</label>
+            <input id="pf-bed" required placeholder="G-13"/>
+          </div>
+          <div class="entry-field">
+            <label>Room</label>
+            <input id="pf-room" placeholder="113-A"/>
+          </div>
+          <div class="entry-field">
+            <label>EWS</label>
+            <input id="pf-ews" type="number" min="0" max="10" value="0"/>
+          </div>
+          <div class="entry-field">
+            <label>Status</label>
+            <select id="pf-status">
+              <option value="stable">Stable</option>
+              <option value="warning">Warning</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+          <div class="entry-field">
+            <label>Patient Code</label>
+            <input id="pf-code" placeholder="Auto-generated if empty"/>
+          </div>
+          <div class="entry-field full">
+            <label>Conditions (comma separated)</label>
+            <input id="pf-conditions" placeholder="COPD exacerbation, Osteoarthritis"/>
+          </div>
+          <div class="entry-field full">
+            <label>Pending Labs</label>
+            <input id="pf-labs" placeholder="CRP follow-up, CBC"/>
+          </div>
+          <div class="entry-field full">
+            <label>Notes</label>
+            <textarea id="pf-notes" placeholder="Bedside notes"></textarea>
+          </div>
+        </div>
+        <div class="entry-note">Fields marked with * are required.</div>
+        <div class="entry-error" id="entry-error" style="display:none;"></div>
+        <div class="entry-actions">
+          <button type="button" class="entry-cancel" onclick="closePatientEntryModal()">Cancel</button>
+          <button type="submit" class="entry-save">Save Patient</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="js/simulation.js"></script>
   <script>
     const sim = new MediNexus();
+    const apiBase = window.MEDINEXUS_API_BASE || 'http://localhost:8000';
     let ward = 'all';
+    let activeRole = 'nurse';
+
+    function renderConnection(state) {
+      const chip = document.getElementById('connection-chip');
+      const source = document.getElementById('source-chip');
+      if (!chip || !source || !state) return;
+      chip.className = `status-chip ${state.backendConnected ? 'ok' : 'warn'}`;
+      chip.textContent = state.backendConnected ? 'Backend connected' : 'Fallback mode active';
+      source.textContent = `Data: ${state.source}`;
+    }
+
+    function renderDemoMode(isDemo) {
+      const chip = document.getElementById('demo-chip');
+      const toggle = document.getElementById('demo-toggle');
+      if (!chip || !toggle) return;
+      chip.className = `status-chip ${isDemo ? 'demo' : ''}`;
+      chip.textContent = isDemo ? 'Demo mode frozen' : 'Live updates running';
+      toggle.classList.toggle('active', isDemo);
+      toggle.textContent = isDemo ? 'Disable Demo Mode' : 'Enable Demo Mode';
+    }
+
+    function toggleDemoMode() {
+      sim.setDemoMode(!sim.getDemoMode());
+    }
+    window.toggleDemoMode = toggleDemoMode;
 
     function setWard(w, btn) {
       ward = w;
@@ -142,6 +432,14 @@
       renderAll();
     }
     window.setWard = setWard;
+
+    function setRole(role, btn) {
+      activeRole = role;
+      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAll();
+    }
+    window.setRole = setRole;
 
     function renderAll() {
       const q = document.getElementById('search').value.toLowerCase();
@@ -155,9 +453,11 @@
 
       document.getElementById('big-grid').innerHTML = patients.map(p => {
         const ec = ewsColor(p.ews);
+        const sp = getSymptomProfile(p);
+        const rv = getRoleView(p, activeRole);
         const statusIcons = { stable:'🟢', warning:'🟡', critical:'🔴' };
         return `
-        <div class="patient-detail-card ${p.status}">
+        <div class="patient-detail-card ${p.status}" onclick="openPatientDetail(${p.id})">
           <div class="pdc-header ${p.status}">
             <div>
               <div class="pdc-name">${statusIcons[p.status]} ${p.name}</div>
@@ -166,66 +466,165 @@
             <span class="status-badge badge-${p.status}">${p.status.toUpperCase()}</span>
           </div>
           <div class="pdc-body">
-            <div class="vitals-row">
-              <div class="vital-box">
-                <div class="vb-label">Heart Rate</div>
-                <div class="vb-val" style="color:${vitalColor('hr',p.vitals.hr)}">${p.vitals.hr}</div>
-                <div class="vb-unit">bpm</div>
+            <div class="summary-grid">
+              <div class="summary-pill">
+                <div class="summary-label">Primary Symptom</div>
+                <div class="summary-value" style="color:${sp.levelColor}">${sp.primary}</div>
               </div>
-              <div class="vital-box">
-                <div class="vb-label">SpO2</div>
-                <div class="vb-val" style="color:${vitalColor('spo2',p.vitals.spo2)}">${p.vitals.spo2}%</div>
-                <div class="vb-unit">oxygen</div>
+              <div class="summary-pill">
+                <div class="summary-label">Risk</div>
+                <div class="summary-value" style="color:${ec}">${p.ews}/10 · ${sp.level.toUpperCase()}</div>
               </div>
-              <div class="vital-box">
-                <div class="vb-label">Blood Pressure</div>
-                <div class="vb-val" style="color:${vitalColor('sbp',p.vitals.sbp)};font-size:0.9rem;">${p.vitals.sbp}/${p.vitals.dbp}</div>
-                <div class="vb-unit">mmHg</div>
+              <div class="summary-pill">
+                <div class="summary-label">Role Focus (${activeRole})</div>
+                <div class="summary-value">${rv.focus}</div>
               </div>
-              <div class="vital-box">
-                <div class="vb-label">Temperature</div>
-                <div class="vb-val" style="color:${vitalColor('temp',p.vitals.temp)}">${p.vitals.temp}</div>
-                <div class="vb-unit">°C</div>
-              </div>
-              <div class="vital-box">
-                <div class="vb-label">Resp. Rate</div>
-                <div class="vb-val" style="color:${vitalColor('rr',p.vitals.rr)}">${p.vitals.rr}</div>
-                <div class="vb-unit">/min</div>
-              </div>
-              <div class="vital-box">
-                <div class="vb-label">EWS Score</div>
-                <div class="vb-val" style="color:${ec}">${p.ews}/10</div>
-                <div class="vb-unit">${p.ews >= 7 ? 'URGENT' : p.ews >= 4 ? 'OBSERVE' : 'NORMAL'}</div>
-              </div>
-            </div>
-            <div class="ews-section">
-              <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">EWS Progress</div>
-              <div class="ews-row">
-                <div class="ews-bg">
-                  <div class="ews-fill" style="width:${p.ews*10}%;background:${ec};"></div>
-                </div>
-                <span style="font-family:var(--mono);font-size:0.78rem;color:${ec};min-width:40px;">${p.ews}/10</span>
-              </div>
-            </div>
-            <div class="spark-section">
-              <div class="spark-row">
-                <span class="spark-lbl">HR</span>
-                ${makeSpark(p.history.hr, vitalColor('hr', p.vitals.hr), 30)}
-              </div>
-              <div class="spark-row">
-                <span class="spark-lbl">SpO₂</span>
-                ${makeSpark(p.history.spo2, vitalColor('spo2', p.vitals.spo2), 30)}
+              <div class="summary-pill">
+                <div class="summary-label">Next Action</div>
+                <div class="summary-value">${rv.action}</div>
               </div>
             </div>
             <div class="conds-row">
               ${p.conditions.map(c => `<span class="cond-tag">${c}</span>`).join('')}
             </div>
+            <div class="detail-hint">Click card for full case details and structured SOAP note</div>
           </div>
         </div>`;
       }).join('');
     }
 
+    function escHtml(s) {
+      return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function openPatientDetail(patientId) {
+      const patient = sim.patients.find(p => p.id === patientId);
+      if (!patient) return;
+
+      const sp = getSymptomProfile(patient);
+      const rv = getRoleView(patient, activeRole);
+      const soap = buildSoapMiniNote(patient, activeRole);
+
+      document.getElementById('detail-title').textContent = `${patient.name} · ${patient.ward} ${patient.bed}`;
+      document.getElementById('detail-meta').textContent = `Role view: ${activeRole.toUpperCase()} · Risk ${patient.ews}/10 (${patient.status.toUpperCase()})`;
+
+      document.getElementById('detail-body').innerHTML = `
+        <div class="detail-sections">
+          <div class="detail-card">
+            <h4>Quick Overview</h4>
+            <div class="detail-line"><b>Primary symptom:</b>${escHtml(sp.primary)}</div>
+            <div class="detail-line"><b>Severity:</b><span style="color:${sp.levelColor}">${escHtml(sp.level.toUpperCase())}</span></div>
+            <div class="detail-line"><b>Onset:</b>${escHtml(sp.onset)}</div>
+            <div class="detail-line"><b>Pain/distress:</b>${escHtml(sp.painScore)}/10</div>
+            <div class="detail-line"><b>Mobility:</b>${escHtml(sp.mobility)}</div>
+          </div>
+          <div class="detail-card">
+            <h4>${activeRole.toUpperCase()} Role Briefing</h4>
+            <div class="detail-line"><b>Focus:</b>${escHtml(rv.focus)}</div>
+            <div class="detail-line"><b>Priority:</b>${escHtml(rv.priority)}</div>
+            <div class="detail-line"><b>Action:</b>${escHtml(rv.action)}</div>
+            <div class="detail-line"><b>Summary:</b>${escHtml(rv.summary)}</div>
+          </div>
+          <div class="detail-card">
+            <h4>SOAP Mini-Note</h4>
+            <div class="detail-line"><b>S:</b>${escHtml(soap.s)}</div>
+            <div class="detail-line"><b>O:</b>${escHtml(soap.o)}</div>
+            <div class="detail-line"><b>A:</b>${escHtml(soap.a)}</div>
+            <div class="detail-line"><b>P:</b>${escHtml(soap.p)}</div>
+          </div>
+          <div class="detail-card">
+            <h4>Operational Context</h4>
+            <div class="detail-line"><b>Conditions:</b>${escHtml((patient.conditions || []).join(', ') || 'None listed')}</div>
+            <div class="detail-line"><b>Care notes:</b>${escHtml(patient.notes || 'Observation note pending update')}</div>
+            <div class="detail-line"><b>Pending labs:</b>${escHtml(patient.pendingLabs || 'No urgent labs pending')}</div>
+            <div class="detail-line"><b>Room:</b>${escHtml(patient.room)} · <b>Age:</b>${escHtml(patient.age)}</div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('detail-modal').classList.add('open');
+    }
+    window.openPatientDetail = openPatientDetail;
+
+    function closePatientDetail(event) {
+      if (event && event.target && event.target.id && event.target.id !== 'detail-modal') return;
+      document.getElementById('detail-modal').classList.remove('open');
+    }
+    window.closePatientDetail = closePatientDetail;
+
+    function openPatientEntryModal() {
+      document.getElementById('entry-error').style.display = 'none';
+      document.getElementById('entry-modal').classList.add('open');
+    }
+    window.openPatientEntryModal = openPatientEntryModal;
+
+    function closePatientEntryModal(event) {
+      if (event && event.target && event.target.id && event.target.id !== 'entry-modal') return;
+      document.getElementById('entry-modal').classList.remove('open');
+    }
+    window.closePatientEntryModal = closePatientEntryModal;
+
+    function splitCsv(value) {
+      return String(value || '')
+        .split(',')
+        .map(v => v.trim())
+        .filter(Boolean);
+    }
+
+    async function submitPatientEntry(event) {
+      event.preventDefault();
+      const errorEl = document.getElementById('entry-error');
+      errorEl.style.display = 'none';
+
+      const patientCodeInput = document.getElementById('pf-code').value.trim();
+      const payload = {
+        patient_code: patientCodeInput || `P-${String(Date.now()).slice(-6)}`,
+        display_name: document.getElementById('pf-name').value.trim(),
+        age: Number(document.getElementById('pf-age').value),
+        sex: document.getElementById('pf-sex').value || null,
+        ward: document.getElementById('pf-ward').value.trim(),
+        bed: document.getElementById('pf-bed').value.trim(),
+        room: document.getElementById('pf-room').value.trim() || null,
+        conditions: splitCsv(document.getElementById('pf-conditions').value),
+        ews: Number(document.getElementById('pf-ews').value || 0),
+        status: document.getElementById('pf-status').value || 'stable',
+        medications: [],
+        pending_labs: document.getElementById('pf-labs').value.trim(),
+        notes: document.getElementById('pf-notes').value.trim(),
+        active: true,
+      };
+
+      try {
+        const res = await fetch(`${apiBase}/api/patients`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const detail = await res.text();
+          throw new Error(detail || 'Unable to save patient');
+        }
+
+        document.getElementById('entry-form').reset();
+        closePatientEntryModal();
+        await sim.loadPatientsFromBackend();
+        renderAll();
+      } catch (err) {
+        errorEl.textContent = `Save failed: ${String(err.message || err)}`;
+        errorEl.style.display = 'block';
+      }
+    }
+    window.submitPatientEntry = submitPatientEntry;
+
     sim.on('vitals', () => renderAll());
+    sim.on('connection', (state) => renderConnection(state));
+    sim.on('demoMode', (isDemo) => renderDemoMode(isDemo));
+    renderConnection(sim.getConnectionState());
+    renderDemoMode(sim.getDemoMode());
     renderAll();
     sim.start();
   </script>

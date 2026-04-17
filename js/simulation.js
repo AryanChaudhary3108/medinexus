@@ -1,20 +1,35 @@
-// ===== MEDINEXUS SIMULATION ENGINE =====
-// Real-time hospital data + AI agent simulation
+// ===== MEDINEXUS OPERATIONAL ENGINE =====
+// Real-time hospital observation data + AI agent coordination
 
-const PATIENTS = [
-  { id:1,  name:"Rajesh Kumar",    age:58, room:"101-A", ward:"General",   bed:"G-01", conditions:["Hypertension","Diabetes"],     vitals:{ hr:75, sbp:125, dbp:82, spo2:97, temp:37.1, rr:16 }, trending:"stable" },
-  { id:2,  name:"Priya Sharma",    age:34, room:"102-B", ward:"General",   bed:"G-02", conditions:["Post-op"],                    vitals:{ hr:88, sbp:118, dbp:76, spo2:98, temp:37.4, rr:18 }, trending:"stable" },
-  { id:3,  name:"Mohammed Ali",    age:67, room:"201-A", ward:"Cardiac",   bed:"C-01", conditions:["CAD","Heart Failure"],        vitals:{ hr:92, sbp:145, dbp:92, spo2:95, temp:37.0, rr:20 }, trending:"warning" },
-  { id:4,  name:"Anita Patel",     age:45, room:"103-C", ward:"General",   bed:"G-03", conditions:["Pneumonia"],                  vitals:{ hr:95, sbp:130, dbp:85, spo2:94, temp:38.3, rr:22 }, trending:"warning" },
-  { id:5,  name:"Suresh Nair",     age:72, room:"301-A", ward:"ICU",       bed:"ICU-1",conditions:["Sepsis","Renal Failure"],     vitals:{ hr:110,sbp:95,  dbp:60, spo2:91, temp:39.1, rr:26 }, trending:"critical" },
-  { id:6,  name:"Meena Reddy",     age:29, room:"104-A", ward:"General",   bed:"G-04", conditions:["Appendectomy Post-op"],       vitals:{ hr:82, sbp:115, dbp:74, spo2:99, temp:37.8, rr:15 }, trending:"stable" },
-  { id:7,  name:"Vikram Singh",    age:55, room:"202-B", ward:"Cardiac",   bed:"C-02", conditions:["Acute MI","Hypertension"],    vitals:{ hr:108,sbp:158, dbp:100,spo2:92, temp:37.6, rr:24 }, trending:"critical" },
-  { id:8,  name:"Lakshmi Devi",    age:80, room:"401-A", ward:"Geriatric", bed:"R-01", conditions:["COPD","Arthritis"],           vitals:{ hr:78, sbp:135, dbp:88, spo2:93, temp:36.8, rr:19 }, trending:"warning" },
-  { id:9,  name:"Arjun Mehta",     age:42, room:"105-B", ward:"General",   bed:"G-05", conditions:["Back surgery recovery"],      vitals:{ hr:70, sbp:120, dbp:78, spo2:99, temp:37.2, rr:14 }, trending:"stable" },
-  { id:10, name:"Fatima Begum",    age:38, room:"106-A", ward:"General",   bed:"G-06", conditions:["Asthma","Allergic Reaction"], vitals:{ hr:98, sbp:122, dbp:80, spo2:95, temp:37.9, rr:21 }, trending:"warning" },
-  { id:11, name:"Ravi Krishnan",   age:63, room:"302-B", ward:"ICU",       bed:"ICU-2",conditions:["Stroke","Hypertension"],      vitals:{ hr:85, sbp:170, dbp:105,spo2:96, temp:37.3, rr:17 }, trending:"warning" },
-  { id:12, name:"Sunita Joshi",    age:52, room:"107-C", ward:"General",   bed:"G-07", conditions:["Gallstones"],                 vitals:{ hr:73, sbp:118, dbp:76, spo2:98, temp:37.0, rr:15 }, trending:"stable" },
-];
+const API_BASE = window.MEDINEXUS_API_BASE || 'http://localhost:8000';
+
+function buildFallbackPatients() {
+  return Array.from({ length: 12 }, (_, idx) => {
+    const id = idx + 1;
+    const ews = [1, 2, 5, 5, 8, 1, 9, 4, 0, 4, 4, 1][idx];
+    const status = ews >= 7 ? 'critical' : ews >= 4 ? 'warning' : 'stable';
+    return {
+      id,
+      name: `Patient ${1000 + id}`,
+      age: 25 + (idx * 4),
+      room: `${100 + id}-A`,
+      ward: idx % 5 === 0 ? 'ICU' : idx % 3 === 0 ? 'Cardiac' : 'General',
+      bed: idx % 5 === 0 ? `ICU-${Math.max(1, Math.floor(id / 5))}` : `G-${String(id).padStart(2, '0')}`,
+      conditions: ['Active inpatient case'],
+      notes: 'Clinical observation-based monitoring active.',
+      pendingLabs: idx % 3 === 0 ? 'Follow-up lab panel pending review' : 'No urgent labs pending',
+      vitals: {
+        hr: 68 + idx * 3,
+        sbp: 112 + idx * 3,
+        dbp: 72 + idx,
+        spo2: Math.max(90, 99 - (idx % 6)),
+        temp: +(36.7 + (idx % 4) * 0.3).toFixed(1),
+        rr: 14 + (idx % 8),
+      },
+      trending: status,
+    };
+  });
+}
 
 const AGENT_DEFS = [
   { id:"sentinel", name:"SentinelAgent", img:"img/agent_sentinel.png", cls:"avatar-sentinel", nameCls:"name-sentinel" },
@@ -26,7 +41,18 @@ const AGENT_DEFS = [
 
 class MediNexus {
   constructor() {
-    this.patients = PATIENTS.map(p => ({
+    const persistedDemoMode = localStorage.getItem('medinexus_demo_mode');
+    this.demoMode = persistedDemoMode === '1';
+    this.connection = {
+      backendConnected: false,
+      usingFallback: true,
+      lastCheckedAt: null,
+      source: 'fallback',
+      message: 'Fallback operational data active',
+    };
+    this.isRunning = false;
+
+    this.patients = buildFallbackPatients().map(p => ({
       ...p,
       vitals: { ...p.vitals },
       history: { hr: Array(20).fill(p.vitals.hr), spo2: Array(20).fill(p.vitals.spo2) },
@@ -55,6 +81,122 @@ class MediNexus {
     // Pre-populate with initial alerts
     this.initAlerts();
     this.initAgentLog();
+    this.loadPatientsFromBackend();
+    // Emit initial state quickly so pages can paint status chips.
+    setTimeout(() => {
+      this.emit('connection', this.connection);
+      this.emit('demoMode', this.demoMode);
+    }, 0);
+  }
+
+  toSimPatient(record) {
+    const vitals = record.vitals || {};
+    const ews = typeof record.ews === 'number' ? record.ews : this.calcEWS(vitals);
+    const status = record.status || (ews >= 7 ? 'critical' : ews >= 4 ? 'warning' : 'stable');
+    const name = record.display_name || record.patient_code || `Patient ${record.id}`;
+    return {
+      id: record.id,
+      name,
+      age: record.age || 0,
+      room: record.room || 'N/A',
+      ward: record.ward || 'General',
+      bed: record.bed || 'N/A',
+      conditions: record.conditions || [],
+      notes: record.notes || '',
+      pendingLabs: record.pending_labs || '',
+      vitals: {
+        hr: Number(vitals.hr ?? 80),
+        sbp: Number(vitals.sbp ?? 120),
+        dbp: Number(vitals.dbp ?? 80),
+        spo2: Number(vitals.spo2 ?? 97),
+        temp: Number(vitals.temp ?? 37.0),
+        rr: Number(vitals.rr ?? 16),
+      },
+      trending: status,
+      history: {
+        hr: Array(20).fill(Number(vitals.hr ?? 80)),
+        spo2: Array(20).fill(Number(vitals.spo2 ?? 97)),
+      },
+      status,
+      ews,
+      alertSent: false,
+    };
+  }
+
+  async loadPatientsFromBackend() {
+    this.connection.lastCheckedAt = new Date().toISOString();
+    try {
+      const res = await fetch(`${API_BASE}/api/patients`);
+      if (!res.ok) {
+        this.connection = {
+          backendConnected: false,
+          usingFallback: true,
+          lastCheckedAt: new Date().toISOString(),
+          source: 'fallback',
+          message: 'Backend unavailable, using fallback operational data',
+        };
+        this.emit('connection', this.connection);
+        return;
+      }
+      const payload = await res.json();
+      if (!payload?.patients || !Array.isArray(payload.patients) || !payload.patients.length) {
+        this.connection = {
+          backendConnected: false,
+          usingFallback: true,
+          lastCheckedAt: new Date().toISOString(),
+          source: 'fallback',
+          message: 'No patient records returned, using fallback operational data',
+        };
+        this.emit('connection', this.connection);
+        return;
+      }
+      this.patients = payload.patients.map(p => this.toSimPatient(p));
+      this.connection = {
+        backendConnected: true,
+        usingFallback: false,
+        lastCheckedAt: new Date().toISOString(),
+        source: 'backend',
+        message: 'Backend connected',
+      };
+      this.emit('vitals', this.patients);
+      this.emit('connection', this.connection);
+    } catch (err) {
+      // Keep fallback operational placeholders when backend is unavailable.
+      console.warn('MediNexus: patient API unavailable, using fallback operational placeholders.', err);
+      this.connection = {
+        backendConnected: false,
+        usingFallback: true,
+        lastCheckedAt: new Date().toISOString(),
+        source: 'fallback',
+        message: 'Backend unavailable, using fallback operational data',
+      };
+      this.emit('connection', this.connection);
+    }
+  }
+
+  setDemoMode(enabled) {
+    const next = Boolean(enabled);
+    if (this.demoMode === next) return;
+    this.demoMode = next;
+    localStorage.setItem('medinexus_demo_mode', next ? '1' : '0');
+
+    if (this.isRunning) {
+      if (next) this.stopLiveLoops();
+      else this.startLiveLoops();
+    }
+
+    this.addAgentMsg('command', next
+      ? 'Demo mode enabled. Live patient drift paused for stable narration.'
+      : 'Demo mode disabled. Live patient updates resumed.');
+    this.emit('demoMode', this.demoMode);
+  }
+
+  getDemoMode() {
+    return this.demoMode;
+  }
+
+  getConnectionState() {
+    return { ...this.connection };
   }
 
   calcEWS(v) {
@@ -91,9 +233,15 @@ class MediNexus {
     this.alerts = [
       {
         id: 'a1', severity: 'critical', room: 'Room 301-A',
-        title: '⚠️ Sepsis Risk Detected — Suresh Nair',
-        desc: 'EWS Score: 8. SpO2 dropped to 91%, temp 39.1°C, HR 110. Sepsis protocol recommended.',
+        title: '⚠️ Sepsis Risk Detected — ICU Patient',
+        desc: 'EWS score remains high with worsening respiratory and infection-related symptoms. Sepsis protocol recommended.',
         agent: '🛡️ SentinelAgent', time: this.timeStr(-3),
+        explain: {
+          trigger: 'High EWS with respiratory and temperature derangement',
+          drivers: ['EWS 8/10', 'Respiratory distress signs', 'Infection symptom escalation', 'Acuity progression'],
+          confidence: 'High (0.91)',
+          ifIgnored: 'Risk of rapid sepsis progression and ICU transfer delay',
+        },
         actions: [
           { label:'APPROVE TRANSFER', cls:'btn-approve', fn:'approveTransfer', arg:'5' },
           { label:'ESCALATE', cls:'btn-escalate', fn:'escalateAlert', arg:'a1' },
@@ -102,9 +250,15 @@ class MediNexus {
       },
       {
         id: 'a2', severity: 'critical', room: 'Room 202-B',
-        title: '🫀 Acute MI Alert — Vikram Singh',
-        desc: 'HR 108, SpO2 92%, BP 158/100. Cardiologist notification sent. ICU bed pre-reserved.',
+        title: '🫀 Acute MI Alert — Cardiac Patient',
+        desc: 'Cardiac symptom burden has escalated with high-risk trajectory. Cardiologist notification sent. ICU bed pre-reserved.',
         agent: '🧠 CommandAgent', time: this.timeStr(-7),
+        explain: {
+          trigger: 'Cardiac deterioration with oxygen desaturation and hypertensive response',
+          drivers: ['Cardiac symptom progression', 'High acuity risk profile', 'Known cardiac history', 'Escalation protocol trigger'],
+          confidence: 'High (0.88)',
+          ifIgnored: 'Potential progression to acute coronary instability',
+        },
         actions: [
           { label:'APPROVE PROTOCOL', cls:'btn-approve', fn:'approveProtocol', arg:'7' },
           { label:'DISMISS', cls:'btn-dismiss', fn:'dismissAlert', arg:'a2' },
@@ -112,9 +266,15 @@ class MediNexus {
       },
       {
         id: 'a3', severity: 'warning', room: 'Room 103-C',
-        title: '🌡️ Fever Spike — Anita Patel',
-        desc: 'Temperature elevated to 38.3°C. Pneumonia patient. Antibiotic escalation suggested.',
+        title: '🌡️ Fever Spike — Ward Patient',
+        desc: 'Infection-related symptom burden increased this shift for a pneumonia case. Antibiotic escalation suggested.',
         agent: '🛡️ SentinelAgent', time: this.timeStr(-12),
+        explain: {
+          trigger: 'Fever rise in infectious respiratory case',
+          drivers: ['Infection symptom escalation', 'Pneumonia context', 'EWS trending upward'],
+          confidence: 'Moderate-High (0.79)',
+          ifIgnored: 'Delayed antimicrobial adjustment and prolonged recovery',
+        },
         actions: [
           { label:'APPROVE TX CHANGE', cls:'btn-approve', fn:'approveTxChange', arg:'4' },
           { label:'DISMISS', cls:'btn-dismiss', fn:'dismissAlert', arg:'a3' },
@@ -125,6 +285,12 @@ class MediNexus {
         title: '🌿 Energy Optimization Ready',
         desc: 'GreenAgent recommends eco-mode for 8 non-critical devices. Estimated saving: ₹4,200/hr.',
         agent: '🌿 GreenAgent', time: this.timeStr(-18),
+        explain: {
+          trigger: 'Low acuity window with non-critical devices identified',
+          drivers: ['8 non-critical devices', 'Current occupancy profile', 'Energy baseline variance'],
+          confidence: 'Moderate (0.72)',
+          ifIgnored: 'Higher operational energy spend during low-demand periods',
+        },
         actions: [
           { label:'ACTIVATE ECO MODE', cls:'btn-approve', fn:'activateEco', arg:'' },
           { label:'DISMISS', cls:'btn-dismiss', fn:'dismissAlert', arg:'a4' },
@@ -139,11 +305,11 @@ class MediNexus {
       { agent:'command', text:'All 5 agents initialized. Hospital monitoring active. 127 patients under surveillance.', time:t(-35) },
       { agent:'green',   text:'HVAC optimization complete. Wing A energy reduced by 18%. Eco lighting active in corridors.', time:t(-28) },
       { agent:'flow',    text:'Bed occupancy: 87%. 8 beds available. Predicted 3 discharges by 18:00. Shifts reassigned.', time:t(-22) },
-      { agent:'guide',   text:'Patient Kumar (Room 201) requested medication info in Hindi. Response delivered.', time:t(-18) },
+      { agent:'guide',   text:'Medication information request handled for an inpatient through multilingual support.', time:t(-18) },
       { agent:'sentinel',text:'Routine vital check complete. 9 stable, 3 warning, 2 critical. EWS scores updated.', time:t(-15) },
-      { agent:'command', text:'Coordinating ICU response for Room 301. Bed 3 reserved. Dr. Patel notified via pager.', time:t(-10) },
-      { agent:'flow',    text:'Nurse Chen assigned additional monitoring duty for Patient #5 (Suresh Nair).', time:t(-8) },
-      { agent:'sentinel',text:'ALERT: Vikram Singh (202-B) showing cardiac stress markers. Escalated to CommandAgent.', time:t(-7) },
+      { agent:'command', text:'Coordinating ICU response for high-acuity case. Bed reserved and escalation acknowledged.', time:t(-10) },
+      { agent:'flow',    text:'Additional monitoring duty assigned for one high-priority inpatient case.', time:t(-8) },
+      { agent:'sentinel',text:'ALERT: Cardiac stress markers detected in monitored case. Escalated to CommandAgent.', time:t(-7) },
       { agent:'green',   text:'Night cycle optimization ready. Recommend eco-mode for 8 devices in Wing B.', time:t(-5) },
       { agent:'guide',   text:'3 patient wayfinding requests handled. Radiology escort arranged for Room 105.', time:t(-3) },
       { agent:'command', text:'Priority queue updated. 4 active alerts. Human approval required for critical cases.', time:t(-1) },
@@ -159,15 +325,28 @@ class MediNexus {
   emit(event, data) { if (this.callbacks[event]) this.callbacks[event](data); }
 
   start() {
-    this.vitalsTimer = setInterval(() => this.updateVitals(), 2500);
-    this.agentTimer  = setInterval(() => this.runAgent(),    4000);
+    this.isRunning = true;
+    this.startLiveLoops();
     this.clockTimer  = setInterval(() => this.emit('clock', new Date()), 1000);
   }
 
   stop() {
+    this.isRunning = false;
+    this.stopLiveLoops();
+    clearInterval(this.clockTimer);
+  }
+
+  startLiveLoops() {
+    if (this.demoMode) return;
     clearInterval(this.vitalsTimer);
     clearInterval(this.agentTimer);
-    clearInterval(this.clockTimer);
+    this.vitalsTimer = setInterval(() => this.updateVitals(), 2500);
+    this.agentTimer = setInterval(() => this.runAgent(), 4000);
+  }
+
+  stopLiveLoops() {
+    clearInterval(this.vitalsTimer);
+    clearInterval(this.agentTimer);
   }
 
   updateVitals() {
@@ -217,14 +396,26 @@ class MediNexus {
   }
 
   triggerPatientAlert(p) {
+    const confidence = p.ews >= 8 ? 'High (0.90)' : p.ews >= 6 ? 'Moderate-High (0.82)' : 'Moderate (0.72)';
     const alert = {
       id: 'a_' + Date.now(),
       severity: p.ews >= 8 ? 'critical' : 'warning',
       room: `Room ${p.room}`,
       title: `${p.ews >= 8 ? '🚨' : '⚠️'} EWS ${p.ews} — ${p.name}`,
-      desc: `Deterioration detected. HR:${p.vitals.hr}, SpO2:${p.vitals.spo2}%, BP:${p.vitals.sbp}/${p.vitals.dbp}. Immediate review required.`,
+      desc: `Deterioration detected from symptom and risk trajectory. Immediate clinical review required.`,
       agent: '🛡️ SentinelAgent',
       time: this.timeStr(0),
+      explain: {
+        trigger: `Deterioration threshold crossed (EWS ${p.ews})`,
+        drivers: [
+          `EWS ${p.ews}/10`,
+          'Symptom severity progression',
+          'Clinical concern escalation',
+          'Role-based intervention threshold reached',
+        ],
+        confidence,
+        ifIgnored: 'Higher risk of delayed intervention and avoidable escalation',
+      },
       actions: [
         { label:'APPROVE TRANSFER', cls:'btn-approve', fn:'approveTransfer', arg:String(p.id) },
         { label:'ESCALATE', cls:'btn-escalate', fn:'escalateAlert', arg:'a_'+Date.now() },
@@ -264,7 +455,7 @@ class MediNexus {
         'Patient assistance: 5 wayfinding requests answered.',
         'Medication reminder sent to 8 patients in General Ward.',
         'Hindi language query handled — medication schedule delivered.',
-        'Appointment reminder sent to Room 204 (Ravi Krishnan).',
+        'Appointment reminder sent to a monitored inpatient case.',
         'Patient satisfaction survey sent to 4 post-discharge patients.',
       ],
       command: [
@@ -382,6 +573,104 @@ function vitalColor(type, val) {
   return '#10b981';
 }
 
+function symptomSeverityFromStatus(status, ews) {
+  if (status === 'critical' || ews >= 7) return 'critical';
+  if (status === 'warning' || ews >= 4) return 'high';
+  if (ews >= 2) return 'moderate';
+  return 'mild';
+}
+
+function symptomColor(level) {
+  if (level === 'critical') return '#ef4444';
+  if (level === 'high') return '#f59e0b';
+  if (level === 'moderate') return '#06b6d4';
+  return '#10b981';
+}
+
+function inferPrimarySymptom(conditions = []) {
+  const text = conditions.join(' ').toLowerCase();
+  if (text.includes('sepsis') || text.includes('infection') || text.includes('pneumonia')) return 'Fever / infection symptoms';
+  if (text.includes('mi') || text.includes('cardiac') || text.includes('heart')) return 'Chest discomfort / cardiac symptoms';
+  if (text.includes('asthma') || text.includes('copd')) return 'Breathlessness / wheeze';
+  if (text.includes('stroke') || text.includes('neuro')) return 'Neurological deficit signs';
+  if (text.includes('post') || text.includes('surgery')) return 'Post-op pain / limited mobility';
+  return 'General symptom monitoring';
+}
+
+function clinicalConcernLabel(level) {
+  if (level === 'critical') return 'Immediate clinician review';
+  if (level === 'high') return 'Senior review recommended';
+  if (level === 'moderate') return 'Close observation';
+  return 'Routine observation';
+}
+
+function getSymptomProfile(patient) {
+  const level = symptomSeverityFromStatus(patient.status, patient.ews || 0);
+  return {
+    level,
+    levelColor: symptomColor(level),
+    primary: inferPrimarySymptom(patient.conditions || []),
+    concern: clinicalConcernLabel(level),
+    painScore: level === 'critical' ? 8 : level === 'high' ? 6 : level === 'moderate' ? 4 : 2,
+    mobility: level === 'critical' ? 'Bed-bound / assisted' : level === 'high' ? 'Assisted ambulation' : 'Ambulatory with supervision',
+    onset: level === 'critical' ? 'Acute (within 2h)' : level === 'high' ? 'Progressing this shift' : 'Stable since last round',
+  };
+}
+
+function nextObservationWindow(level) {
+  if (level === 'critical') return 'q15m observations';
+  if (level === 'high') return 'q30m observations';
+  if (level === 'moderate') return 'q2h observations';
+  return 'q4h routine observations';
+}
+
+function getRoleView(patient, role = 'nurse') {
+  const symptom = getSymptomProfile(patient);
+  const pendingLabs = patient.pendingLabs || 'No urgent labs pending';
+  const notes = patient.notes || 'No additional clinical notes';
+
+  if (role === 'doctor') {
+    return {
+      focus: `Clinical review: ${symptom.primary}`,
+      priority: symptom.level === 'critical' ? 'Consultant priority now' : symptom.level === 'high' ? 'Registrar priority this round' : 'Team review this shift',
+      action: `Reassess treatment plan and correlate with labs (${pendingLabs}).`,
+      summary: `Doctor view: ${notes}`,
+    };
+  }
+
+  if (role === 'admin') {
+    const risk = patient.ews >= 7 ? 'High escalation risk' : patient.ews >= 4 ? 'Moderate escalation risk' : 'Low escalation risk';
+    const disposition = patient.ews >= 7 ? 'Expected >48h stay' : patient.ews >= 4 ? 'Expected 24-48h stay' : 'Expected <24h review window';
+    return {
+      focus: `Operational risk: ${risk}`,
+      priority: `Bed flow: ${disposition}`,
+      action: 'Keep staffing and escalation pathways ready for this ward.',
+      summary: `Admin view: ${pendingLabs}`,
+    };
+  }
+
+  return {
+    focus: `Nursing concern: ${symptom.primary}`,
+    priority: `Monitoring: ${nextObservationWindow(symptom.level)}`,
+    action: `Continue bedside observation and medication safety checks.`,
+    summary: `Nurse note: ${notes}`,
+  };
+}
+
+function buildSoapMiniNote(patient, role = 'nurse') {
+  const symptom = getSymptomProfile(patient);
+  const roleView = getRoleView(patient, role);
+  const conditions = (patient.conditions || []).slice(0, 2).join(', ') || 'General inpatient condition';
+  const pendingLabs = patient.pendingLabs || 'No urgent labs pending';
+
+  return {
+    s: `${symptom.primary}; distress score ${symptom.painScore}/10; ${symptom.onset}.`,
+    o: `Risk ${patient.ews}/10 (${patient.status}); mobility: ${symptom.mobility}; labs: ${pendingLabs}.`,
+    a: `${conditions}; ${roleView.focus}`,
+    p: `${roleView.action} ${roleView.priority}`,
+  };
+}
+
 // Clock
 function updateClock() {
   const el = document.getElementById('clock');
@@ -403,3 +692,7 @@ window.MediNexus = MediNexus;
 window.ewsColor = ewsColor;
 window.makeSpark = makeSpark;
 window.vitalColor = vitalColor;
+window.getSymptomProfile = getSymptomProfile;
+window.symptomColor = symptomColor;
+window.getRoleView = getRoleView;
+window.buildSoapMiniNote = buildSoapMiniNote;

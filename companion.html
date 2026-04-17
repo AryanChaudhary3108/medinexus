@@ -271,8 +271,8 @@
           <button class="chip" onclick="chipAsk(this)">🚨 Summarise all critical alerts</button>
           <button class="chip" onclick="chipAsk(this)">🛏️ Current bed availability</button>
           <button class="chip" onclick="chipAsk(this)">📊 Patient EWS leaderboard</button>
-          <button class="chip" onclick="chipAsk(this)">💊 Suresh Nair medication review</button>
-          <button class="chip" onclick="chipAsk(this)">📝 Draft discharge summary – Rajesh Kumar</button>
+          <button class="chip" onclick="chipAsk(this)">💊 Medication review for highest-risk patient</button>
+          <button class="chip" onclick="chipAsk(this)">📝 Draft discharge summary for next planned discharge</button>
           <button class="chip" onclick="chipAsk(this)">🧪 Pending lab results overview</button>
           <button class="chip" onclick="chipAsk(this)">⚕️ Sepsis protocol steps</button>
         </div>
@@ -368,73 +368,7 @@
       return `You are CareGuide Clinical, an AI-powered clinical intelligence assistant for MediNexus Hospital staff.
 ${roleCtx[role] || roleCtx.nurse}
 
-== CURRENT HOSPITAL STATE ==
-Total Patients: 127  |  Critical: 2  |  Warning: 4  |  Stable: 6 (monitored ward)
-Bed Occupancy: 87%  |  Available Beds: 8  |  ICU Beds Available: 1
-On-Call Physician: Dr. Sharma (until 22:00)  |  Shift: Day (07:00–19:00)
-
-== MONITORED PATIENTS (12 in active wards) ==
-1. Rajesh Kumar  | 58M | G-01 | Hypertension, Diabetes     | EWS 1 | STABLE
-   Vitals: HR 75, SpO2 97%, BP 125/82, Temp 37.1, RR 16
-   Meds: Metformin 500mg (08:00), Amlodipine 5mg (13:00), Aspirin 75mg (20:00)
-
-2. Priya Sharma  | 34F | G-02 | Post-op (Day 2)             | EWS 2 | STABLE
-   Vitals: HR 88, SpO2 98%, BP 118/76, Temp 37.4, RR 18
-
-3. Mohammed Ali  | 67M | C-01 | CAD, Heart Failure          | EWS 5 | ⚠️ WARNING
-   Vitals: HR 92, SpO2 95%, BP 145/92, Temp 37.0, RR 20
-
-4. Anita Patel   | 45F | G-03 | Pneumonia                   | EWS 5 | ⚠️ WARNING
-   Vitals: HR 95, SpO2 94%, BP 130/85, Temp 38.3, RR 22
-   Active Alert: Fever spike — antibiotic escalation recommended
-
-5. Suresh Nair   | 72M | ICU-1 | Sepsis, Renal Failure      | EWS 8 | 🚨 CRITICAL
-   Vitals: HR 110, SpO2 91%, BP 95/60, Temp 39.1, RR 26
-   Active Alert: Sepsis protocol initiated — transfer pending approval
-
-6. Meena Reddy   | 29F | G-04 | Appendectomy Post-op        | EWS 1 | STABLE
-   Vitals: HR 82, SpO2 99%, BP 115/74, Temp 37.8, RR 15
-
-7. Vikram Singh  | 55M | C-02 | Acute MI, Hypertension      | EWS 9 | 🚨 CRITICAL
-   Vitals: HR 108, SpO2 92%, BP 158/100, Temp 37.6, RR 24
-   Active Alert: Acute MI alert — cath lab on standby
-
-8. Lakshmi Devi  | 80F | R-01 | COPD, Arthritis             | EWS 4 | ⚠️ WARNING
-   Vitals: HR 78, SpO2 93%, BP 135/88, Temp 36.8, RR 19
-
-9. Arjun Mehta   | 42M | G-05 | Back surgery recovery        | EWS 0 | STABLE
-   Vitals: HR 70, SpO2 99%, BP 120/78, Temp 37.2, RR 14
-   Likely discharge: today at 17:00
-
-10. Fatima Begum | 38F | G-06 | Asthma, Allergic Reaction   | EWS 4 | ⚠️ WARNING
-    Vitals: HR 98, SpO2 95%, BP 122/80, Temp 37.9, RR 21
-
-11. Ravi Krishnan| 63M | ICU-2 | Stroke, Hypertension       | EWS 4 | ⚠️ WARNING
-    Vitals: HR 85, SpO2 96%, BP 170/105, Temp 37.3, RR 17
-
-12. Sunita Joshi  | 52F | G-07 | Gallstones                 | EWS 1 | STABLE
-    Vitals: HR 73, SpO2 98%, BP 118/76, Temp 37.0, RR 15
-
-== HOSPITAL LAYOUT ==
-Ground Floor: Emergency, Pharmacy, Canteen, Restrooms
-1st Floor: Blood Bank (Wing B), Laboratory, General Wards (G-01 to G-07)
-2nd Floor: Radiology/X-Ray (Wing A), Cardiac Ward (C-01, C-02)
-3rd Floor: ICU (Beds 1–4), Physiotherapy / Rehab Centre
-
-== CLINICAL PROTOCOLS (brief) ==
-Sepsis: qSOFA score → blood cultures → IV antibiotics within 1hr → fluid resuscitation 30ml/kg
-Acute MI: Aspirin 300mg stat → GTN → ECG → activate cath lab → cardiology consult
-Fall risk: Assess Morse scale → non-slip footwear → bed alarm on → chart as high risk
-Deteriorating patient: reassess every 15min → escalate if EWS ≥7 → call MET team if EWS ≥8
-
-== STYLE RULES ==
-- Respond in professional, concise clinical language.
-- Use bullet points or numbered lists for protocols and summaries.
-- For discharge summaries, use structured headings: Patient Info, Diagnosis, Treatment, Discharge Meds, Follow-up.
-- For handover reports, include: outstanding tasks, alerts, pending labs, meds due.
-- NEVER provide a definitive diagnosis — say "suggest clinical review" or "consider X".
-- Always flag if a patient needs immediate human clinical assessment.
-- Keep responses under 400 words unless generating a formal document.`;
+  Use operational backend data only. Do not assume patient details that are not present in the current API response.`;
     }
 
     // =============================================
@@ -460,18 +394,18 @@ Deteriorating patient: reassess every 15min → escalate if EWS ≥7 → call ME
           '📊 Patient EWS leaderboard',
           '🛏️ Current bed availability',
           '⚕️ Sepsis protocol steps',
-          '📝 Draft nursing notes – Suresh Nair',
+          '📝 Draft nursing notes for highest-risk patient',
           '🧪 Pending lab results overview',
         ],
         doctor: [
-          '📝 Draft discharge summary – Rajesh Kumar',
-          '🫀 MI protocol for Vikram Singh',
+          '📝 Draft discharge summary for next planned discharge',
+          '🫀 MI protocol for current cardiac alert',
           '💊 Drug interaction check: Metformin + Amlodipine',
-          '🔬 Differential for Anita Patel (Pneumonia, Temp 38.3)',
-          '📋 ICU handover – Suresh Nair',
-          '🧪 Interpret Ravi Krishnan BP 170/105',
+          '🔬 Differential guidance for high-fever pneumonia case',
+          '📋 ICU handover for highest acuity case',
+          '🧪 Interpret severe hypertension trend',
           '📊 Prioritise patients by EWS score',
-          '🏥 Discharge planning – Arjun Mehta',
+          '🏥 Discharge planning for stable post-op patient',
         ],
         admin: [
           '🛏️ Full bed occupancy report',
@@ -643,7 +577,7 @@ Deteriorating patient: reassess every 15min → escalate if EWS ≥7 → call ME
     window.chipAsk = chipAsk;
 
     // =============================================
-    //   SIMULATION — right panel
+    //   LIVE OBSERVATION PANEL (right side)
     // =============================================
     const sim = new MediNexus();
 
@@ -726,7 +660,7 @@ Deteriorating patient: reassess every 15min → escalate if EWS ≥7 → call ME
         addMsg(reply, false, false, docs);
       } catch {
         removeTyping();
-        addMsg('CareGuide Clinical is online.\n\nShift Status: 2 critical patients require immediate attention — Suresh Nair (ICU-1, EWS 8, Sepsis) and Vikram Singh (C-02, EWS 9, Acute MI). 4 patients are in warning status.\n\nNote: Could not reach backend. Start the FastAPI server for full RAG-powered responses.', false, true, []);
+        addMsg('CareGuide Clinical is online.\n\nCould not reach backend for live patient context. Start the FastAPI server for full RAG-powered responses backed by operational patient data.', false, true, []);
       }
     })();
   </script>

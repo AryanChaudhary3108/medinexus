@@ -71,7 +71,7 @@ if not exist "%VENV%\Scripts\activate.bat" (
 echo [INFO] Installing backend dependencies...
 pushd "%BACKEND%"
 "%VENV_PY%" -m pip install --upgrade pip
-"%VENV_PY%" -m pip install fastapi uvicorn qdrant-client fastembed groq
+"%VENV_PY%" -m pip install fastapi uvicorn qdrant-client fastembed groq python-dotenv
 if errorlevel 1 (
   popd
   echo [ERROR] Dependency installation failed.
