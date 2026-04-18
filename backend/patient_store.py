@@ -1,4 +1,5 @@
 import json
+import re
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -9,6 +10,55 @@ DATA_DIR = BASE_DIR / "data"
 DB_PATH = DATA_DIR / "medinexus.db"
 SEED_PATH = DATA_DIR / "patients_seed.json"
 MANUAL_BED_STATUSES = {"available", "reserved"}
+
+
+def _normalize_bed_code(raw_code: str, ward: str | None = None) -> str:
+    text = str(raw_code or "").strip().upper()
+    if not text:
+        return ""
+
+    normalized_ward = str(ward or "").strip().upper()
+    compact = re.sub(r"\s+", "", text)
+
+    # Match ICU-1, ICU1, G-2, C03, R-10, etc.
+    match = re.match(r"^(ICU|[GCR])[-_ ]*0*(\d{1,3})$", compact)
+    if match:
+        prefix = match.group(1)
+        number = int(match.group(2))
+        if prefix == "ICU":
+            return f"ICU-{number:02d}"
+        return f"{prefix}-{number:02d}"
+
+    # If ward indicates ICU and bed is numeric, normalize as ICU-XX.
+    if normalized_ward == "ICU" and compact.isdigit():
+        return f"ICU-{int(compact):02d}"
+
+    return text
+
+
+def _dedupe_beds_by_normalized_code(conn: sqlite3.Connection) -> None:
+    rows = conn.execute("SELECT id, bed_code FROM beds ORDER BY id ASC").fetchall()
+    groups: dict[str, list[sqlite3.Row]] = {}
+    for row in rows:
+        norm = _normalize_bed_code(row["bed_code"])
+        groups.setdefault(norm, []).append(row)
+
+    for norm, group in groups.items():
+        if not norm:
+            continue
+
+        # Prefer canonical code row if present; otherwise keep oldest row.
+        group_sorted = sorted(
+            group,
+            key=lambda r: (0 if str(r["bed_code"]).upper() == norm else 1, int(r["id"])),
+        )
+        keeper = group_sorted[0]
+
+        if str(keeper["bed_code"]).upper() != norm:
+            conn.execute("UPDATE beds SET bed_code = ? WHERE id = ?", (norm, keeper["id"]))
+
+        for duplicate in group_sorted[1:]:
+            conn.execute("DELETE FROM beds WHERE id = ?", (duplicate["id"],))
 
 
 def _connect() -> sqlite3.Connection:
@@ -114,6 +164,7 @@ def _seed_default_beds(conn: sqlite3.Connection) -> None:
 
 
 def _sync_beds_with_patients(conn: sqlite3.Connection) -> None:
+    _dedupe_beds_by_normalized_code(conn)
     now = datetime.utcnow().isoformat()
     conn.execute(
         """
@@ -136,9 +187,17 @@ def _sync_beds_with_patients(conn: sqlite3.Connection) -> None:
     ).fetchall()
 
     for row in rows:
-        bed_code = str(row["bed"] or "").strip()
+        ward_name = str(row["ward"] or "General")
+        bed_code_raw = str(row["bed"] or "").strip()
+        bed_code = _normalize_bed_code(bed_code_raw, ward_name)
         if not bed_code:
             continue
+
+        if bed_code != bed_code_raw:
+            conn.execute(
+                "UPDATE patients SET bed = ?, updated_at = ? WHERE id = ?",
+                (bed_code, now, row["id"]),
+            )
 
         exists = conn.execute("SELECT id FROM beds WHERE bed_code = ?", (bed_code,)).fetchone()
         if not exists:
@@ -147,11 +206,10 @@ def _sync_beds_with_patients(conn: sqlite3.Connection) -> None:
                 INSERT INTO beds (bed_code, ward, room, status, updated_at)
                 VALUES (?, ?, ?, 'available', ?)
                 """,
-                (bed_code, row["ward"] or "General", row["room"], now),
+                (bed_code, ward_name, row["room"], now),
             )
 
         patient_status = str(row["status"] or "stable").lower()
-        ward_name = str(row["ward"] or "General")
         derived_status = "critical" if patient_status == "critical" else ("icu" if ward_name.upper() == "ICU" else "occupied")
 
         conn.execute(
