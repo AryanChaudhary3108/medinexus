@@ -223,6 +223,7 @@
       <li><a href="index.html">Home</a></li>
       <li><a href="dashboard.html">Bed Management</a></li>
       <li><a href="patients.html">Patients</a></li>
+      <li><a href="proactive.html">Proactive Risk</a></li>
       <li><a href="companion.html" class="active">CareGuide</a></li>
     </ul>
     <div class="nav-right">
@@ -343,12 +344,8 @@
     </div>
   </div>
 
-  <script src="js/auth.js"></script>
   <script src="js/simulation.js"></script>
   <script>
-    const session = window.mnxAuth.bootstrapPage({ allowedRoles: ['admin', 'doctor', 'nurse'] });
-    if (!session) throw new Error('Unauthorized session');
-
     // =============================================
     //   CONFIG  — backend RAG endpoint
     // =============================================

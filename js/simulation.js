@@ -30,6 +30,7 @@ class MediNexus {
     this.patients = [];
     this.agentLog = [];
     this.alerts = [];
+    this.proactiveRisks = [];
     this.approvedActions = [];
     this.stats = {
       totalPatients: 0,
@@ -127,6 +128,77 @@ class MediNexus {
     }
   }
 
+  toSimRisk(record) {
+    return {
+      id: record.id || `risk_${record.patient_id}`,
+      patientId: Number(record.patient_id),
+      patientName: record.patient_name || 'Patient',
+      ward: record.ward || 'General',
+      bed: record.bed || 'N/A',
+      room: record.room || 'N/A',
+      currentEws: Number(record.current_ews ?? 0),
+      predictedEws: Number(record.predicted_ews ?? 0),
+      status: record.status || 'warning',
+      etaMin: Number(record.eta_min ?? 90),
+      confidence: Number(record.confidence ?? 0.75),
+      drivers: Array.isArray(record.drivers) ? record.drivers : [],
+      playbook: Array.isArray(record.playbook) ? record.playbook : [],
+      expectedDrop: Number(record.expected_ews_reduction ?? 1),
+      reason: record.reason || '',
+    };
+  }
+
+  buildFallbackProactiveRisks() {
+    const items = (this.patients || [])
+      .filter(p => (p.ews || 0) >= 5)
+      .map((p) => {
+        const predicted = Math.min(10, Number(p.ews || 0) + (p.status === 'critical' ? 1 : 0));
+        return {
+          id: `risk_fallback_${p.id}`,
+          patientId: p.id,
+          patientName: p.name,
+          ward: p.ward,
+          bed: p.bed,
+          room: p.room,
+          currentEws: Number(p.ews || 0),
+          predictedEws: predicted,
+          status: predicted >= 7 ? 'critical' : 'warning',
+          etaMin: predicted >= 8 ? 45 : 90,
+          confidence: predicted >= 8 ? 0.86 : 0.74,
+          drivers: [
+            `Current EWS ${p.ews || 0}/10`,
+            'Trend and symptom drift indicate potential deterioration',
+          ],
+          playbook: [
+            'Increase monitoring frequency',
+            'Escalate to duty doctor',
+            'Prioritize pending labs and reassessment',
+          ],
+          expectedDrop: predicted >= 8 ? 2 : 1,
+          reason: 'Fallback risk model (backend proactive endpoint unavailable)',
+        };
+      })
+      .sort((a, b) => b.predictedEws - a.predictedEws || a.etaMin - b.etaMin)
+      .slice(0, 8);
+    this.proactiveRisks = items;
+  }
+
+  async loadProactiveRisksFromBackend() {
+    try {
+      const res = await fetch(`${API_BASE}/api/proactive-risks?limit=8`);
+      if (!res.ok) {
+        this.buildFallbackProactiveRisks();
+        return;
+      }
+      const payload = await res.json();
+      this.proactiveRisks = Array.isArray(payload?.risks)
+        ? payload.risks.map(r => this.toSimRisk(r))
+        : [];
+    } catch (_) {
+      this.buildFallbackProactiveRisks();
+    }
+  }
+
   async loadPatientsFromBackend() {
     this.connection.lastCheckedAt = new Date().toISOString();
     try {
@@ -137,6 +209,7 @@ class MediNexus {
       const payload = await res.json();
       this.patients = payload.patients.map(p => this.toSimPatient(p));
       await this.loadBedsFromBackend();
+      await this.loadProactiveRisksFromBackend();
       this.rebuildDerivedState();
       this.connection = {
         backendConnected: true,
@@ -158,6 +231,7 @@ class MediNexus {
       };
       this.patients = [];
       this.beds = [];
+      this.proactiveRisks = [];
       this.rebuildDerivedState();
       this.emit('vitals', this.patients);
       this.emit('connection', this.connection);
@@ -189,6 +263,7 @@ class MediNexus {
     this.emit('stats', this.stats);
     this.emit('beds', this.beds);
     this.emit('alerts', this.alerts);
+    this.emit('proactiveRisks', this.proactiveRisks);
     this.emit('agentLog', this.agentLog);
     this.emit('energy', this.energyData);
   }
@@ -710,6 +785,46 @@ class MediNexus {
       this.addAgentMsg('command', `Transfer failed (${sourceBedId} -> ${targetBedId}): ${String(err.message || err)}`);
       return { ok: false, error: String(err.message || err) };
     }
+  }
+
+  async applyProactivePlaybook(patientId, riskId) {
+    const id = Number(patientId);
+    const patient = this.patients.find(p => p.id === id);
+    const risk = this.proactiveRisks.find(r => r.id === riskId || r.patientId === id);
+    if (!patient) {
+      return { ok: false, error: 'Patient not found for playbook action.' };
+    }
+
+    const drop = Math.max(1, Number(risk?.expectedDrop || 1));
+    const cooldownMin = 5;
+    const approvedAt = new Date().toISOString();
+    const machineTag = `PLAYBOOK_APPROVED at=${approvedAt} drop=${drop} cooldown=${cooldownMin}`;
+    const noteLine = `Playbook approved ${approvedAt}: monitoring intensified, senior review initiated, reassessment scheduled in 30m.`;
+    try {
+      const res = await fetch(`${API_BASE}/api/patients/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: `${patient.notes || ''}\n${machineTag}\n${noteLine}`.trim() }),
+      });
+      if (!res.ok) {
+        throw new Error(await this.readApiErrorDetail(res, 'Unable to apply proactive playbook'));
+      }
+      await this.loadPatientsFromBackend();
+    } catch (err) {
+      return { ok: false, error: String(err.message || err) };
+    }
+
+    this.approvedActions.unshift({
+      text: `Proactive playbook approved for ${patient.name} (target risk reduction: ${drop} EWS points)`,
+      time: this.timeStr(0),
+    });
+    this.stats.alertsResolved++;
+    this.proactiveRisks = this.proactiveRisks.filter(r => r.id !== riskId && r.patientId !== id);
+    this.emit('stats', this.stats);
+    this.emit('approved', this.approvedActions);
+    this.emit('proactiveRisks', this.proactiveRisks);
+    this.addAgentMsg('command', `Proactive playbook activated for ${patient.name}. Team notified for rapid preventive intervention.`);
+    return { ok: true, error: null };
   }
 
   activateEco() {

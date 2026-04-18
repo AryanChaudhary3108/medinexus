@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proactive Risk | MediNexus</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    :root {
+      --bg: #030712;
+      --surface: rgba(15, 23, 42, 0.55);
+      --surface-2: rgba(15, 23, 42, 0.78);
+      --border: rgba(148, 163, 184, 0.25);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --green: #10b981;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Space Grotesk', sans-serif;
+      background:
+        radial-gradient(circle at 8% 12%, rgba(16,185,129,0.12), transparent 42%),
+        radial-gradient(circle at 88% 0%, rgba(14,165,233,0.12), transparent 38%),
+        linear-gradient(135deg, #020617 0%, #020b1f 45%, #040d1f 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .page-wrap {
+      width: min(1180px, calc(100% - 2rem));
+      margin: 1.5rem auto 2rem;
+    }
+    .page-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .page-title {
+      font-size: clamp(1.2rem, 1.8vw, 1.65rem);
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      margin-bottom: 0.25rem;
+    }
+    .page-sub {
+      color: var(--muted);
+      font-size: 0.92rem;
+      max-width: 760px;
+      line-height: 1.5;
+    }
+    .ops-strip {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      padding: 0.6rem 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.8rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      backdrop-filter: blur(8px);
+    }
+    .ops-left, .ops-right {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .status-chip {
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: 0.68rem;
+      padding: 0.28rem 0.58rem;
+      border-radius: 999px;
+      font-weight: 700;
+      letter-spacing: 0.9px;
+      text-transform: uppercase;
+    }
+    .status-chip.ok {
+      color: #86efac;
+      border-color: rgba(34, 197, 94, 0.45);
+      background: rgba(34, 197, 94, 0.15);
+    }
+    .status-chip.warn {
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.45);
+      background: rgba(239, 68, 68, 0.12);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 1rem;
+      align-items: start;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(9px);
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem 0.95rem;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(2, 6, 23, 0.45);
+    }
+    .card-title {
+      font-size: 0.84rem;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .card-title img {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+    .card-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.7px;
+      border-radius: 999px;
+      padding: 0.3rem 0.62rem;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: rgba(148, 163, 184, 0.08);
+    }
+    .card-badge.cb-red {
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.45);
+      background: rgba(239, 68, 68, 0.12);
+    }
+    .card-badge.cb-green {
+      color: #86efac;
+      border-color: rgba(34, 197, 94, 0.45);
+      background: rgba(34, 197, 94, 0.12);
+    }
+    .risk-list {
+      max-height: 620px;
+      overflow-y: auto;
+      padding: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+    }
+    .risk-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.78rem;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .risk-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.65rem;
+      margin-bottom: 0.35rem;
+    }
+    .risk-title {
+      font-size: 1.02rem;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .risk-chip {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      border-radius: 999px;
+      padding: 0.24rem 0.52rem;
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .risk-chip.critical {
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.45);
+      background: rgba(239, 68, 68, 0.12);
+    }
+    .risk-chip.warning {
+      color: #fbbf24;
+      border-color: rgba(245, 158, 11, 0.45);
+      background: rgba(245, 158, 11, 0.12);
+    }
+    .risk-meta {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+    .risk-driver {
+      font-size: 0.92rem;
+      color: var(--text);
+      line-height: 1.45;
+      margin-bottom: 0.52rem;
+    }
+    .risk-why {
+      margin-bottom: 0.6rem;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 10px;
+      background: rgba(2, 6, 23, 0.45);
+      padding: 0.5rem 0.6rem;
+    }
+    .risk-why-title {
+      font-size: 0.68rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+    .risk-why-list {
+      margin: 0;
+      padding-left: 1rem;
+      color: #dbeafe;
+      font-size: 0.84rem;
+      line-height: 1.4;
+      display: grid;
+      gap: 0.2rem;
+    }
+    .risk-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .btn-playbook {
+      border: 0;
+      border-radius: 10px;
+      padding: 0.62rem 1rem;
+      font-weight: 700;
+      letter-spacing: 0.45px;
+      font-family: inherit;
+      color: #03140c;
+      background: linear-gradient(90deg, #34d399, #10b981);
+      cursor: pointer;
+    }
+    .btn-playbook:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+    .no-alerts {
+      border: 1px dashed var(--border);
+      border-radius: 11px;
+      padding: 0.9rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      background: rgba(15, 23, 42, 0.3);
+    }
+    .actions-log {
+      max-height: 620px;
+      overflow-y: auto;
+      padding: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .action-item {
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 0.62rem 0.68rem;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .action-text {
+      font-size: 0.86rem;
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+    }
+    .action-time {
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+    @media (max-width: 980px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .risk-list, .actions-log {
+        max-height: 420px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-brand">
+      <div class="nav-logo-icon"><img src="img/logo.png" alt="MediNexus" style="width:32px;height:32px;object-fit:contain;"/></div>
+      <div>
+        <div class="nav-logo-text">MediNexus</div>
+        <div class="nav-tagline">Hospital Bed Management</div>
+      </div>
+    </div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="dashboard.html">Bed Management</a></li>
+      <li><a href="patients.html">Patients</a></li>
+      <li><a href="proactive.html" class="active">Proactive Risk</a></li>
+      <li><a href="companion.html">CareGuide</a></li>
+    </ul>
+    <div class="nav-right">
+      <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+      <div class="nav-time" id="clock">--:--:--</div>
+    </div>
+  </nav>
+
+  <main class="page-wrap">
+    <div class="page-head">
+      <div>
+        <div class="page-title">Proactive Risk Command</div>
+        <div class="page-sub">This tab isolates early deterioration predictions so teams can trigger interventions quickly without crowding the bed management screen.</div>
+      </div>
+    </div>
+
+    <div class="ops-strip">
+      <div class="ops-left">
+        <span class="status-chip warn" id="connection-chip">Connecting to backend...</span>
+        <span class="status-chip" id="source-chip">Data: backend</span>
+      </div>
+      <div class="ops-right">
+        <span class="status-chip" id="refresh-chip">Auto refresh every 5s</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <div class="card-header">
+          <div class="card-title"><img src="img/agent_sentinel.png" alt="risk"/> Proactive Risk Queue</div>
+          <div class="card-badge cb-red" id="proactive-badge">0 HIGH RISK</div>
+        </div>
+        <div class="risk-list" id="proactive-list">
+          <div class="no-alerts">No proactive risk alerts right now.</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <div class="card-title"><img src="img/logo.png" alt="approved"/> Approved Actions Log</div>
+          <div class="card-badge cb-green" id="resolved-badge">0 Resolved Today</div>
+        </div>
+        <div class="actions-log" id="actions-log">
+          <div class="no-alerts">No approved actions yet.</div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/simulation.js"></script>
+  <script>
+    const sim = new MediNexus();
+
+    function updateClock() {
+      const d = new Date();
+      document.getElementById('clock').textContent = d.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+    }
+
+    function renderConnection(connection) {
+      const chip = document.getElementById('connection-chip');
+      const sourceChip = document.getElementById('source-chip');
+      const connected = Boolean(connection && connection.backendConnected);
+      chip.textContent = connected ? 'Backend connected' : 'Backend unavailable';
+      chip.classList.toggle('ok', connected);
+      chip.classList.toggle('warn', !connected);
+      sourceChip.textContent = `Data: ${connection?.source || 'backend'}`;
+    }
+
+    function renderApprovedLog(items) {
+      const list = document.getElementById('actions-log');
+      const badge = document.getElementById('resolved-badge');
+      const entries = Array.isArray(items) ? items : [];
+      badge.textContent = `${entries.length} Resolved Today`;
+
+      if (!entries.length) {
+        list.innerHTML = '<div class="no-alerts">No approved actions yet.</div>';
+        return;
+      }
+
+      list.innerHTML = entries.slice(0, 14).map((item) => `
+        <div class="action-item">
+          <div class="action-text">${item.text}</div>
+          <div class="action-time">${item.time}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderProactiveRisks(risks) {
+      const list = document.getElementById('proactive-list');
+      const badge = document.getElementById('proactive-badge');
+      const items = Array.isArray(risks) ? risks : [];
+      badge.textContent = `${items.length} HIGH RISK`;
+
+      if (!items.length) {
+        list.innerHTML = '<div class="no-alerts">No proactive risk alerts right now.</div>';
+        return;
+      }
+
+      list.innerHTML = items.map((r) => {
+        const reasonLines = [
+          ...(Array.isArray(r.drivers) ? r.drivers : []),
+          ...(r.reason ? [r.reason] : []),
+        ].filter(Boolean).slice(0, 3);
+        const reasonHtml = reasonLines.length
+          ? `<div class="risk-why">
+              <div class="risk-why-title">Why risk is high</div>
+              <ul class="risk-why-list">${reasonLines.map((line) => `<li>${line}</li>`).join('')}</ul>
+            </div>`
+          : '';
+
+        return `
+        <div class="risk-card" id="risk-${r.id}">
+          <div class="risk-head">
+            <div class="risk-title">${r.patientName}</div>
+            <span class="risk-chip ${r.status}">EWS ${r.currentEws} -> ${r.predictedEws}</span>
+          </div>
+          <div class="risk-meta">${r.ward} · Bed ${r.bed} · ETA ${r.etaMin}m · Confidence ${Math.round((r.confidence || 0) * 100)}%</div>
+          <div class="risk-driver">${(r.drivers && r.drivers[0]) || r.reason || 'Potential deterioration risk detected.'}</div>
+          ${reasonHtml}
+          <div class="risk-actions">
+            <button class="btn-playbook" onclick="handleProactiveAction('${r.patientId}','${r.id}')">ACTIVATE PLAYBOOK</button>
+          </div>
+        </div>
+      `;
+      }).join('');
+    }
+
+    async function handleProactiveAction(patientId, riskId) {
+      const card = document.getElementById('risk-' + riskId);
+      if (card) {
+        card.querySelectorAll('button').forEach((btn) => {
+          btn.disabled = true;
+        });
+      }
+
+      const outcome = await sim.applyProactivePlaybook(Number(patientId), riskId);
+      if (!outcome.ok) {
+        if (card) {
+          card.querySelectorAll('button').forEach((btn) => {
+            btn.disabled = false;
+          });
+          let errNode = card.querySelector('.risk-driver.error');
+          if (!errNode) {
+            errNode = document.createElement('div');
+            errNode.className = 'risk-driver error';
+            errNode.style.color = '#fca5a5';
+            card.appendChild(errNode);
+          }
+          errNode.textContent = outcome.error || 'Unable to activate playbook.';
+        }
+        return;
+      }
+
+      if (card) {
+        card.style.transition = 'opacity 0.28s, transform 0.28s';
+        card.style.opacity = '0';
+        card.style.transform = 'translateX(-16px)';
+      }
+
+      setTimeout(() => {
+        renderProactiveRisks(sim.proactiveRisks || []);
+      }, 280);
+    }
+    window.handleProactiveAction = handleProactiveAction;
+
+    sim.on('clock', () => updateClock());
+    sim.on('connection', (state) => renderConnection(state));
+    sim.on('proactiveRisks', (risks) => renderProactiveRisks(risks));
+    sim.on('approved', (items) => renderApprovedLog(items));
+
+    updateClock();
+    renderConnection(sim.getConnectionState());
+    renderProactiveRisks(sim.proactiveRisks || []);
+    renderApprovedLog(sim.approvedActions || []);
+    sim.start();
+  </script>
+</body>
+</html>

@@ -1,17 +1,14 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Header, Depends
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from qdrant_client import QdrantClient
 from io import BytesIO
+from datetime import datetime
 import os
 import json
 import re
-import time
-import hmac
-import base64
-import hashlib
 from pathlib import Path
 from dotenv import load_dotenv
 from groq import Groq
@@ -53,32 +50,6 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 if not GROQ_API_KEY:
     print("[WARN] GROQ_API_KEY not set. Set it before starting the server.")
 groq_client = Groq(api_key=GROQ_API_KEY)
-
-AUTH_SECRET = os.environ.get("MEDINEXUS_AUTH_SECRET", "medinexus-change-this-secret")
-AUTH_TTL_SECONDS = int(os.environ.get("MEDINEXUS_AUTH_TTL_SECONDS", "43200"))
-
-DEMO_USERS: dict[str, dict[str, str]] = {
-    "admin": {
-        "password": "Admin@123",
-        "role": "admin",
-        "display_name": "Hospital Admin",
-    },
-    "doctor": {
-        "password": "Doctor@123",
-        "role": "doctor",
-        "display_name": "Duty Doctor",
-    },
-    "nurse": {
-        "password": "Nurse@123",
-        "role": "nurse",
-        "display_name": "Ward Nurse",
-    },
-    "ops": {
-        "password": "Ops@123",
-        "role": "operations",
-        "display_name": "Operations Desk",
-    },
-}
 
 # Initialize local Qdrant client, but lazy-load embedding model on first chat request.
 embedding_model = None
@@ -144,66 +115,6 @@ class BedAssignRequest(BaseModel):
 class BedTransferRequest(BaseModel):
     target_bed_id: int = Field(..., ge=1)
 
-
-class AuthLoginRequest(BaseModel):
-    username: str = Field(..., min_length=2)
-    password: str = Field(..., min_length=3)
-
-
-def _sign_payload(payload: dict[str, Any]) -> str:
-    raw = json.dumps(payload, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
-    body = base64.urlsafe_b64encode(raw).decode("utf-8").rstrip("=")
-    signature = hmac.new(AUTH_SECRET.encode("utf-8"), body.encode("utf-8"), hashlib.sha256).hexdigest()
-    return f"{body}.{signature}"
-
-
-def _verify_token(token: str) -> dict[str, Any] | None:
-    try:
-        body, signature = token.split(".", 1)
-    except ValueError:
-        return None
-
-    expected = hmac.new(AUTH_SECRET.encode("utf-8"), body.encode("utf-8"), hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(signature, expected):
-        return None
-
-    padding = "=" * (-len(body) % 4)
-    try:
-        decoded = base64.urlsafe_b64decode(f"{body}{padding}".encode("utf-8")).decode("utf-8")
-        payload = json.loads(decoded)
-    except Exception:
-        return None
-
-    exp = int(payload.get("exp", 0) or 0)
-    if exp < int(time.time()):
-        return None
-    return payload
-
-
-def get_current_user(authorization: str | None = Header(default=None)) -> dict[str, Any]:
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Missing authorization token")
-
-    prefix = "Bearer "
-    if not authorization.startswith(prefix):
-        raise HTTPException(status_code=401, detail="Invalid authorization header")
-
-    payload = _verify_token(authorization[len(prefix):].strip())
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-    return payload
-
-
-def require_roles(*roles: str):
-    allowed = set(roles)
-
-    def _checker(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-        if user.get("role") not in allowed:
-            raise HTTPException(status_code=403, detail="Access denied for this role")
-        return user
-
-    return _checker
-
 ROLE_CONTEXT = {
     "nurse": (
         "You are assisting a WARD NURSE. Focus on: real-time symptom progression, "
@@ -235,11 +146,41 @@ def _status_from_ews(ews: int) -> str:
     return "stable"
 
 
+def _extract_active_playbook_intervention(notes_text: str) -> dict[str, Any] | None:
+    text = str(notes_text or "")
+    # Machine-readable tag written by proactive playbook action.
+    match = re.search(r"PLAYBOOK_APPROVED\s+at=([^\s]+)\s+drop=(\d{1,2})\s+cooldown=(\d{1,3})", text)
+    if not match:
+        return None
+
+    approved_raw = match.group(1)
+    drop = max(1, min(3, int(match.group(2))))
+    cooldown_min = max(1, min(120, int(match.group(3))))
+
+    try:
+        approved_dt = datetime.fromisoformat(approved_raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+    now_ts = datetime.utcnow().timestamp()
+    approved_ts = approved_dt.timestamp()
+    is_active = now_ts <= (approved_ts + cooldown_min * 60)
+
+    return {
+        "drop": drop,
+        "cooldown_min": cooldown_min,
+        "approved_at": approved_raw,
+        "is_active": is_active,
+    }
+
+
 def _heuristic_risk_assessment(payload: dict[str, Any]) -> dict[str, Any]:
     ews = int(payload.get("ews", 0) or 0)
     conditions = [str(c).lower() for c in payload.get("conditions", [])]
     pending_labs = str(payload.get("pending_labs", "") or "").lower()
-    notes = str(payload.get("notes", "") or "").lower()
+    notes_raw = str(payload.get("notes", "") or "")
+    notes = notes_raw.lower()
+    intervention = _extract_active_playbook_intervention(notes_raw)
 
     severe_terms = [
         "sepsis", "shock", "acute mi", "mi", "stroke", "hemorrhagic", "respiratory failure",
@@ -249,18 +190,41 @@ def _heuristic_risk_assessment(payload: dict[str, Any]) -> dict[str, Any]:
         "heart failure", "cancer", "copd", "pneumonia", "asthma", "hypertension", "diabetes",
     ]
     urgent_terms = ["urgent", "critical", "repeat", "pending", "high risk", "escalate"]
+    stabilizing_terms = [
+        "playbook approved",
+        "playbook_approved",
+        "monitoring intensified",
+        "responding to treatment",
+        "stabilizing",
+        "improving",
+    ]
 
     condition_text = " ".join(conditions)
     severe_hits = sum(1 for t in severe_terms if t in condition_text)
     moderate_hits = sum(1 for t in moderate_terms if t in condition_text)
     lab_hits = sum(1 for t in urgent_terms if t in pending_labs)
     note_hits = sum(1 for t in ["worsening", "distress", "escalation", "icu", "unstable"] if t in notes)
+    stabilizing_hits = sum(1 for t in stabilizing_terms if t in notes)
 
     combo_bonus = 0
     if "heart failure" in condition_text and "cancer" in condition_text:
         combo_bonus = 2
 
-    adjusted = ews + min(3, severe_hits * 2) + min(2, moderate_hits) + min(1, lab_hits) + min(1, note_hits) + combo_bonus
+    intervention_drop = 0
+    if stabilizing_hits:
+        intervention_drop = max(intervention_drop, 1)
+    if intervention and intervention["is_active"]:
+        intervention_drop = max(intervention_drop, int(intervention["drop"]))
+
+    adjusted = (
+        ews
+        + min(3, severe_hits * 2)
+        + min(2, moderate_hits)
+        + min(1, lab_hits)
+        + min(1, note_hits)
+        + combo_bonus
+        - intervention_drop
+    )
     adjusted = max(0, min(10, adjusted))
     status = _status_from_ews(adjusted)
 
@@ -268,6 +232,8 @@ def _heuristic_risk_assessment(payload: dict[str, Any]) -> dict[str, Any]:
         f"Heuristic model: base EWS {ews}, severe markers {severe_hits}, "
         f"moderate comorbidity markers {moderate_hits}."
     )
+    if intervention and intervention["is_active"]:
+        reason += f" Active proactive playbook detected (-{intervention_drop} risk points during cooldown window)."
     return {
         "ews": adjusted,
         "status": status,
@@ -350,50 +316,77 @@ def assess_patient_risk(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def build_proactive_risk_item(patient: dict[str, Any]) -> dict[str, Any] | None:
+    current_ews = int(patient.get("ews", 0) or 0)
+    heuristic = _heuristic_risk_assessment(patient)
+    predicted_ews = max(current_ews, int(heuristic.get("ews", current_ews)))
+
+    conditions = [str(c).lower() for c in patient.get("conditions", [])]
+    pending_labs = str(patient.get("pending_labs", "") or "").lower()
+    notes_raw = str(patient.get("notes", "") or "")
+    notes = notes_raw.lower()
+    intervention = _extract_active_playbook_intervention(notes_raw)
+
+    # Prevent immediate reappearance right after clinician approval.
+    if intervention and intervention["is_active"]:
+        return None
+
+    drivers: list[str] = [f"Current EWS {current_ews}/10"]
+    if any(t in " ".join(conditions) for t in ["sepsis", "shock", "mi", "stroke", "respiratory", "aki"]):
+        drivers.append("High-risk condition markers present")
+    if any(t in pending_labs for t in ["urgent", "critical", "repeat", "pending", "high risk"]):
+        drivers.append("Urgent/pending labs require follow-up")
+    if any(t in notes for t in ["worsening", "distress", "escalation", "unstable"]):
+        drivers.append("Clinical notes indicate deterioration")
+    if intervention and intervention["is_active"]:
+        drivers.append(f"Playbook active: intervention cooldown in progress ({intervention['cooldown_min']}m window)")
+    if len(drivers) == 1:
+        drivers.append("Trend analysis indicates potential acuity rise")
+
+    eta_min = 120
+    if predicted_ews >= 9:
+        eta_min = 30
+    elif predicted_ews >= 8:
+        eta_min = 45
+    elif predicted_ews >= 7:
+        eta_min = 60
+    elif predicted_ews >= 5:
+        eta_min = 90
+
+    confidence = min(0.96, 0.62 + 0.04 * predicted_ews + 0.03 * max(0, len(drivers) - 1))
+
+    playbook = [
+        "Increase monitoring frequency to q15-q30m",
+        "Escalate to duty doctor and notify rapid response pathway",
+        "Prioritize pending labs and reassessment in this shift",
+    ]
+    expected_drop = 2 if predicted_ews >= 8 else 1
+
+    return {
+        "id": f"risk_{patient['id']}_{predicted_ews}",
+        "patient_id": patient["id"],
+        "patient_name": patient.get("display_name") or patient.get("patient_code") or f"Patient {patient['id']}",
+        "ward": patient.get("ward", "General"),
+        "bed": patient.get("bed") or "N/A",
+        "room": patient.get("room") or "N/A",
+        "current_ews": current_ews,
+        "predicted_ews": predicted_ews,
+        "status": _status_from_ews(predicted_ews),
+        "eta_min": eta_min,
+        "confidence": round(confidence, 2),
+        "drivers": drivers,
+        "playbook": playbook,
+        "expected_ews_reduction": expected_drop,
+        "reason": heuristic.get("reason", "Heuristic progression risk"),
+    }
+
+
 @app.on_event("startup")
 async def startup_event():
     init_patient_db()
 
-
-@app.post("/api/auth/login")
-async def login(req: AuthLoginRequest):
-    user = DEMO_USERS.get(req.username.strip().lower())
-    if not user or user["password"] != req.password:
-        raise HTTPException(status_code=401, detail="Invalid username or password")
-
-    now = int(time.time())
-    payload = {
-        "sub": req.username.strip().lower(),
-        "role": user["role"],
-        "display_name": user["display_name"],
-        "iat": now,
-        "exp": now + AUTH_TTL_SECONDS,
-    }
-    token = _sign_payload(payload)
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "username": payload["sub"],
-        "role": payload["role"],
-        "display_name": payload["display_name"],
-        "expires_in": AUTH_TTL_SECONDS,
-    }
-
-
-@app.get("/api/auth/me")
-async def auth_me(user: dict[str, Any] = Depends(get_current_user)):
-    return {
-        "username": user.get("sub", ""),
-        "role": user.get("role", ""),
-        "display_name": user.get("display_name", ""),
-        "exp": user.get("exp", 0),
-    }
-
 @app.post("/api/chat")
-async def chat_with_careguide(
-    req: ChatRequest,
-    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse")),
-):
+async def chat_with_careguide(req: ChatRequest):
     try:
         user_query = req.messages[-1]["content"] if req.messages else ""
 
@@ -486,19 +479,25 @@ async def health():
 
 
 @app.get("/api/patients")
-async def patients(
-    active_only: bool = True,
-    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse", "operations")),
-):
+async def patients(active_only: bool = True):
     return {"patients": list_patients(active_only=active_only)}
 
 
+@app.get("/api/proactive-risks")
+async def proactive_risks(limit: int = 6, active_only: bool = True):
+    size = max(1, min(limit, 20))
+    patients_data = list_patients(active_only=active_only)
+    items = [build_proactive_risk_item(p) for p in patients_data]
+    high_risk_items = [r for r in items if r and r["predicted_ews"] >= 5]
+    high_risk_items.sort(key=lambda r: (-r["predicted_ews"], r["eta_min"], -r["confidence"]))
+    return {
+        "generated_at": datetime.utcnow().isoformat(),
+        "risks": high_risk_items[:size],
+    }
+
+
 @app.post("/api/patients/{patient_id}/lab-reports")
-async def upload_lab_report(
-    patient_id: int,
-    file: UploadFile = File(...),
-    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse")),
-):
+async def upload_lab_report(patient_id: int, file: UploadFile = File(...)):
     """Upload a lab report (PDF only) for a patient."""
     # Validate file type
     if file.content_type != "application/pdf":
@@ -522,10 +521,7 @@ async def upload_lab_report(
 
 
 @app.get("/api/patients/{patient_id}/lab-reports")
-async def list_lab_reports(
-    patient_id: int,
-    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse", "operations")),
-):
+async def list_lab_reports(patient_id: int):
     """Get all lab reports for a patient."""
     try:
         reports = get_lab_reports(patient_id)
@@ -535,10 +531,7 @@ async def list_lab_reports(
 
 
 @app.get("/api/lab-reports/{report_id}/download")
-async def download_lab_report(
-    report_id: int,
-    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse", "operations")),
-):
+async def download_lab_report(report_id: int):
     """Download a lab report file."""
     result = get_lab_report_file(report_id)
     if not result:
@@ -553,10 +546,7 @@ async def download_lab_report(
 
 
 @app.delete("/api/lab-reports/{report_id}")
-async def delete_lab_report_endpoint(
-    report_id: int,
-    _user: dict[str, Any] = Depends(require_roles("admin", "doctor")),
-):
+async def delete_lab_report_endpoint(report_id: int):
     """Delete a lab report."""
     if not delete_lab_report(report_id):
         raise HTTPException(status_code=404, detail="Lab report not found")
@@ -564,18 +554,12 @@ async def delete_lab_report_endpoint(
 
 
 @app.get("/api/beds")
-async def beds(
-    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse", "operations")),
-):
+async def beds():
     return {"beds": list_beds()}
 
 
 @app.patch("/api/beds/{bed_id}/status")
-async def patch_bed_status(
-    bed_id: int,
-    req: BedStatusUpdateRequest,
-    _user: dict[str, Any] = Depends(require_roles("admin", "operations")),
-):
+async def patch_bed_status(bed_id: int, req: BedStatusUpdateRequest):
     try:
         updated = update_bed_status(bed_id, req.status)
         if not updated:
@@ -586,11 +570,7 @@ async def patch_bed_status(
 
 
 @app.post("/api/beds/{bed_id}/assign")
-async def post_assign_bed(
-    bed_id: int,
-    req: BedAssignRequest,
-    _user: dict[str, Any] = Depends(require_roles("admin", "operations")),
-):
+async def post_assign_bed(bed_id: int, req: BedAssignRequest):
     try:
         return assign_bed_to_patient(bed_id, req.patient_id)
     except ValueError as e:
@@ -598,10 +578,7 @@ async def post_assign_bed(
 
 
 @app.post("/api/beds/{bed_id}/vacate")
-async def post_vacate_bed(
-    bed_id: int,
-    _user: dict[str, Any] = Depends(require_roles("admin", "operations")),
-):
+async def post_vacate_bed(bed_id: int):
     try:
         return vacate_bed(bed_id)
     except ValueError as e:
@@ -609,11 +586,7 @@ async def post_vacate_bed(
 
 
 @app.post("/api/beds/{bed_id}/transfer")
-async def post_transfer_bed(
-    bed_id: int,
-    req: BedTransferRequest,
-    _user: dict[str, Any] = Depends(require_roles("admin", "operations")),
-):
+async def post_transfer_bed(bed_id: int, req: BedTransferRequest):
     try:
         return transfer_patient_to_bed(bed_id, req.target_bed_id)
     except ValueError as e:
@@ -621,10 +594,7 @@ async def post_transfer_bed(
 
 
 @app.get("/api/patients/{patient_id}")
-async def patient_by_id(
-    patient_id: int,
-    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse", "operations")),
-):
+async def patient_by_id(patient_id: int):
     patient = get_patient(patient_id)
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -632,10 +602,7 @@ async def patient_by_id(
 
 
 @app.post("/api/patients")
-async def create_patient_record(
-    req: PatientCreateRequest,
-    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse")),
-):
+async def create_patient_record(req: PatientCreateRequest):
     try:
         payload = req.model_dump()
         assessment = assess_patient_risk(payload)
@@ -650,11 +617,7 @@ async def create_patient_record(
 
 
 @app.patch("/api/patients/{patient_id}")
-async def update_patient_record(
-    patient_id: int,
-    req: PatientUpdateRequest,
-    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse")),
-):
+async def update_patient_record(patient_id: int, req: PatientUpdateRequest):
     patch = req.model_dump(exclude_unset=True)
 
     existing = get_patient(patient_id)
@@ -665,6 +628,16 @@ async def update_patient_record(
     assessment = assess_patient_risk(merged)
     patch["ews"] = assessment["ews"]
     patch["status"] = assessment["status"]
+
+    intervention = _extract_active_playbook_intervention(str(merged.get("notes", "") or ""))
+    if intervention and intervention["is_active"]:
+        # Ensure clinician-approved playbook causes immediate, visible risk reduction in Patient Monitoring.
+        reduced_ews = max(0, int(existing.get("ews", 0)) - int(intervention["drop"]))
+        patch["ews"] = reduced_ews
+        patch["status"] = _status_from_ews(reduced_ews)
+        assessment["ews"] = reduced_ews
+        assessment["status"] = patch["status"]
+        assessment["reason"] = f"{assessment.get('reason', 'Risk reassessed.') } Playbook reduction applied ({intervention['drop']} points)."
 
     updated = update_patient(patient_id, patch)
     if not updated:

@@ -101,6 +101,7 @@
       <li><a href="index.html" class="active">Home</a></li>
       <li><a href="dashboard.html">Bed Management</a></li>
       <li><a href="patients.html">Patients</a></li>
+      <li><a href="proactive.html">Proactive Risk</a></li>
       <li><a href="companion.html">CareGuide</a></li>
     </ul>
     <div class="nav-right">
@@ -288,14 +289,6 @@
     </footer>
   </div>
 
-  <script src="js/auth.js"></script>
-  <script>
-    const existingSession = window.mnxAuth.getSession();
-    if (existingSession) {
-      window.mnxAuth.addNavControls(existingSession);
-      window.mnxAuth.applyNavPermissions(existingSession);
-    }
-  </script>
   <script src="js/simulation.js"></script>
 </body>
 </html>
