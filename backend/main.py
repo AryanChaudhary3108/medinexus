@@ -4,7 +4,6 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from qdrant_client import QdrantClient
-from fastembed import TextEmbedding
 from io import BytesIO
 import os
 import json
@@ -51,11 +50,19 @@ if not GROQ_API_KEY:
     print("[WARN] GROQ_API_KEY not set. Set it before starting the server.")
 groq_client = Groq(api_key=GROQ_API_KEY)
 
-# Initialize embeddings and local Qdrant
-print("Loading Embedding Model...")
-embedding_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+# Initialize local Qdrant client, but lazy-load embedding model on first chat request.
+embedding_model = None
 qdrant = QdrantClient(path=str(Path(__file__).with_name("qdrant_db")))
 COLLECTION_NAME = "hospital_knowledge"
+
+
+def get_embedding_model():
+    global embedding_model
+    if embedding_model is None:
+        from fastembed import TextEmbedding
+        print("Loading Embedding Model...")
+        embedding_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+    return embedding_model
 
 class ChatRequest(BaseModel):
     messages: list
@@ -266,7 +273,8 @@ async def chat_with_careguide(req: ChatRequest):
         context = ""
         retrieved_docs = []
         if user_query:
-            query_vector = list(embedding_model.embed([user_query]))[0]
+            embedder = get_embedding_model()
+            query_vector = list(embedder.embed([user_query]))[0]
             query_values = query_vector.tolist()
 
             # qdrant-client >= 1.17 uses query_points(); older versions use search().
