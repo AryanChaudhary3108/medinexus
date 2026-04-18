@@ -288,6 +288,14 @@
     </footer>
   </div>
 
+  <script src="js/auth.js"></script>
+  <script>
+    const existingSession = window.mnxAuth.getSession();
+    if (existingSession) {
+      window.mnxAuth.addNavControls(existingSession);
+      window.mnxAuth.applyNavPermissions(existingSession);
+    }
+  </script>
   <script src="js/simulation.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -8,6 +8,10 @@ from io import BytesIO
 import os
 import json
 import re
+import time
+import hmac
+import base64
+import hashlib
 from pathlib import Path
 from dotenv import load_dotenv
 from groq import Groq
@@ -49,6 +53,32 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 if not GROQ_API_KEY:
     print("[WARN] GROQ_API_KEY not set. Set it before starting the server.")
 groq_client = Groq(api_key=GROQ_API_KEY)
+
+AUTH_SECRET = os.environ.get("MEDINEXUS_AUTH_SECRET", "medinexus-change-this-secret")
+AUTH_TTL_SECONDS = int(os.environ.get("MEDINEXUS_AUTH_TTL_SECONDS", "43200"))
+
+DEMO_USERS: dict[str, dict[str, str]] = {
+    "admin": {
+        "password": "Admin@123",
+        "role": "admin",
+        "display_name": "Hospital Admin",
+    },
+    "doctor": {
+        "password": "Doctor@123",
+        "role": "doctor",
+        "display_name": "Duty Doctor",
+    },
+    "nurse": {
+        "password": "Nurse@123",
+        "role": "nurse",
+        "display_name": "Ward Nurse",
+    },
+    "ops": {
+        "password": "Ops@123",
+        "role": "operations",
+        "display_name": "Operations Desk",
+    },
+}
 
 # Initialize local Qdrant client, but lazy-load embedding model on first chat request.
 embedding_model = None
@@ -113,6 +143,66 @@ class BedAssignRequest(BaseModel):
 
 class BedTransferRequest(BaseModel):
     target_bed_id: int = Field(..., ge=1)
+
+
+class AuthLoginRequest(BaseModel):
+    username: str = Field(..., min_length=2)
+    password: str = Field(..., min_length=3)
+
+
+def _sign_payload(payload: dict[str, Any]) -> str:
+    raw = json.dumps(payload, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
+    body = base64.urlsafe_b64encode(raw).decode("utf-8").rstrip("=")
+    signature = hmac.new(AUTH_SECRET.encode("utf-8"), body.encode("utf-8"), hashlib.sha256).hexdigest()
+    return f"{body}.{signature}"
+
+
+def _verify_token(token: str) -> dict[str, Any] | None:
+    try:
+        body, signature = token.split(".", 1)
+    except ValueError:
+        return None
+
+    expected = hmac.new(AUTH_SECRET.encode("utf-8"), body.encode("utf-8"), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(signature, expected):
+        return None
+
+    padding = "=" * (-len(body) % 4)
+    try:
+        decoded = base64.urlsafe_b64decode(f"{body}{padding}".encode("utf-8")).decode("utf-8")
+        payload = json.loads(decoded)
+    except Exception:
+        return None
+
+    exp = int(payload.get("exp", 0) or 0)
+    if exp < int(time.time()):
+        return None
+    return payload
+
+
+def get_current_user(authorization: str | None = Header(default=None)) -> dict[str, Any]:
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authorization token")
+
+    prefix = "Bearer "
+    if not authorization.startswith(prefix):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+
+    payload = _verify_token(authorization[len(prefix):].strip())
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return payload
+
+
+def require_roles(*roles: str):
+    allowed = set(roles)
+
+    def _checker(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+        if user.get("role") not in allowed:
+            raise HTTPException(status_code=403, detail="Access denied for this role")
+        return user
+
+    return _checker
 
 ROLE_CONTEXT = {
     "nurse": (
@@ -264,8 +354,46 @@ def assess_patient_risk(payload: dict[str, Any]) -> dict[str, Any]:
 async def startup_event():
     init_patient_db()
 
+
+@app.post("/api/auth/login")
+async def login(req: AuthLoginRequest):
+    user = DEMO_USERS.get(req.username.strip().lower())
+    if not user or user["password"] != req.password:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    now = int(time.time())
+    payload = {
+        "sub": req.username.strip().lower(),
+        "role": user["role"],
+        "display_name": user["display_name"],
+        "iat": now,
+        "exp": now + AUTH_TTL_SECONDS,
+    }
+    token = _sign_payload(payload)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "username": payload["sub"],
+        "role": payload["role"],
+        "display_name": payload["display_name"],
+        "expires_in": AUTH_TTL_SECONDS,
+    }
+
+
+@app.get("/api/auth/me")
+async def auth_me(user: dict[str, Any] = Depends(get_current_user)):
+    return {
+        "username": user.get("sub", ""),
+        "role": user.get("role", ""),
+        "display_name": user.get("display_name", ""),
+        "exp": user.get("exp", 0),
+    }
+
 @app.post("/api/chat")
-async def chat_with_careguide(req: ChatRequest):
+async def chat_with_careguide(
+    req: ChatRequest,
+    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse")),
+):
     try:
         user_query = req.messages[-1]["content"] if req.messages else ""
 
@@ -358,12 +486,19 @@ async def health():
 
 
 @app.get("/api/patients")
-async def patients(active_only: bool = True):
+async def patients(
+    active_only: bool = True,
+    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse", "operations")),
+):
     return {"patients": list_patients(active_only=active_only)}
 
 
 @app.post("/api/patients/{patient_id}/lab-reports")
-async def upload_lab_report(patient_id: int, file: UploadFile = File(...)):
+async def upload_lab_report(
+    patient_id: int,
+    file: UploadFile = File(...),
+    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse")),
+):
     """Upload a lab report (PDF only) for a patient."""
     # Validate file type
     if file.content_type != "application/pdf":
@@ -387,7 +522,10 @@ async def upload_lab_report(patient_id: int, file: UploadFile = File(...)):
 
 
 @app.get("/api/patients/{patient_id}/lab-reports")
-async def list_lab_reports(patient_id: int):
+async def list_lab_reports(
+    patient_id: int,
+    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse", "operations")),
+):
     """Get all lab reports for a patient."""
     try:
         reports = get_lab_reports(patient_id)
@@ -397,7 +535,10 @@ async def list_lab_reports(patient_id: int):
 
 
 @app.get("/api/lab-reports/{report_id}/download")
-async def download_lab_report(report_id: int):
+async def download_lab_report(
+    report_id: int,
+    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse", "operations")),
+):
     """Download a lab report file."""
     result = get_lab_report_file(report_id)
     if not result:
@@ -412,7 +553,10 @@ async def download_lab_report(report_id: int):
 
 
 @app.delete("/api/lab-reports/{report_id}")
-async def delete_lab_report_endpoint(report_id: int):
+async def delete_lab_report_endpoint(
+    report_id: int,
+    _user: dict[str, Any] = Depends(require_roles("admin", "doctor")),
+):
     """Delete a lab report."""
     if not delete_lab_report(report_id):
         raise HTTPException(status_code=404, detail="Lab report not found")
@@ -420,12 +564,18 @@ async def delete_lab_report_endpoint(report_id: int):
 
 
 @app.get("/api/beds")
-async def beds():
+async def beds(
+    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse", "operations")),
+):
     return {"beds": list_beds()}
 
 
 @app.patch("/api/beds/{bed_id}/status")
-async def patch_bed_status(bed_id: int, req: BedStatusUpdateRequest):
+async def patch_bed_status(
+    bed_id: int,
+    req: BedStatusUpdateRequest,
+    _user: dict[str, Any] = Depends(require_roles("admin", "operations")),
+):
     try:
         updated = update_bed_status(bed_id, req.status)
         if not updated:
@@ -436,7 +586,11 @@ async def patch_bed_status(bed_id: int, req: BedStatusUpdateRequest):
 
 
 @app.post("/api/beds/{bed_id}/assign")
-async def post_assign_bed(bed_id: int, req: BedAssignRequest):
+async def post_assign_bed(
+    bed_id: int,
+    req: BedAssignRequest,
+    _user: dict[str, Any] = Depends(require_roles("admin", "operations")),
+):
     try:
         return assign_bed_to_patient(bed_id, req.patient_id)
     except ValueError as e:
@@ -444,7 +598,10 @@ async def post_assign_bed(bed_id: int, req: BedAssignRequest):
 
 
 @app.post("/api/beds/{bed_id}/vacate")
-async def post_vacate_bed(bed_id: int):
+async def post_vacate_bed(
+    bed_id: int,
+    _user: dict[str, Any] = Depends(require_roles("admin", "operations")),
+):
     try:
         return vacate_bed(bed_id)
     except ValueError as e:
@@ -452,7 +609,11 @@ async def post_vacate_bed(bed_id: int):
 
 
 @app.post("/api/beds/{bed_id}/transfer")
-async def post_transfer_bed(bed_id: int, req: BedTransferRequest):
+async def post_transfer_bed(
+    bed_id: int,
+    req: BedTransferRequest,
+    _user: dict[str, Any] = Depends(require_roles("admin", "operations")),
+):
     try:
         return transfer_patient_to_bed(bed_id, req.target_bed_id)
     except ValueError as e:
@@ -460,7 +621,10 @@ async def post_transfer_bed(bed_id: int, req: BedTransferRequest):
 
 
 @app.get("/api/patients/{patient_id}")
-async def patient_by_id(patient_id: int):
+async def patient_by_id(
+    patient_id: int,
+    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse", "operations")),
+):
     patient = get_patient(patient_id)
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -468,7 +632,10 @@ async def patient_by_id(patient_id: int):
 
 
 @app.post("/api/patients")
-async def create_patient_record(req: PatientCreateRequest):
+async def create_patient_record(
+    req: PatientCreateRequest,
+    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse")),
+):
     try:
         payload = req.model_dump()
         assessment = assess_patient_risk(payload)
@@ -483,7 +650,11 @@ async def create_patient_record(req: PatientCreateRequest):
 
 
 @app.patch("/api/patients/{patient_id}")
-async def update_patient_record(patient_id: int, req: PatientUpdateRequest):
+async def update_patient_record(
+    patient_id: int,
+    req: PatientUpdateRequest,
+    _user: dict[str, Any] = Depends(require_roles("admin", "doctor", "nurse")),
+):
     patch = req.model_dump(exclude_unset=True)
 
     existing = get_patient(patient_id)

@@ -563,8 +563,12 @@
 
   <div class="toast" id="save-toast" role="status" aria-live="polite"></div>
 
+  <script src="js/auth.js"></script>
   <script src="js/simulation.js"></script>
   <script>
+    const session = window.mnxAuth.bootstrapPage({ allowedRoles: ['admin', 'doctor', 'nurse'] });
+    if (!session) throw new Error('Unauthorized session');
+
     const sim = new MediNexus();
     const apiBase = window.MEDINEXUS_API_BASE || (
       ['localhost', '127.0.0.1'].includes(window.location.hostname)

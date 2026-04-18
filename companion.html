@@ -343,8 +343,12 @@
     </div>
   </div>
 
+  <script src="js/auth.js"></script>
   <script src="js/simulation.js"></script>
   <script>
+    const session = window.mnxAuth.bootstrapPage({ allowedRoles: ['admin', 'doctor', 'nurse'] });
+    if (!session) throw new Error('Unauthorized session');
+
     // =============================================
     //   CONFIG  — backend RAG endpoint
     // =============================================
